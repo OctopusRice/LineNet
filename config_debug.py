@@ -6,3 +6,4 @@ is_lineGT = False
 # cfg_file = "CornerNet"
 cfg_file = "LineNet"
 workers = 3
+legacy = True

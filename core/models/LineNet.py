@@ -1,11 +1,12 @@
 import torch
 import torch.nn as nn
+import config_debug
 
 from .py_utils import HorizontalLinePool, VerticalLinePool
 
 from .py_utils.utils import convolution, residual, line_pool
 from .py_utils.losses import LineNet_Loss
-from .py_utils.modules import hg_module, hg, lines_net
+from .py_utils.modules import hg_module, hg, line_net
 
 def make_pool_layer(dim):
     return nn.Sequential()
@@ -15,7 +16,7 @@ def make_hg_layer(inp_dim, out_dim, modules):
     layers += [residual(out_dim, out_dim) for _ in range(1, modules)]
     return nn.Sequential(*layers)
 
-class model(lines_net):
+class model(line_net):
     def _pred_mod(self, dim):
         return nn.Sequential(
             convolution(3, 256, 256, with_bn=False),
@@ -65,11 +66,16 @@ class model(lines_net):
         b_tags = nn.ModuleList([self._pred_mod(1) for _ in range(stacks)])
         r_tags = nn.ModuleList([self._pred_mod(1) for _ in range(stacks)])
 
-        t_offs = nn.ModuleList([self._pred_mod(2) for _ in range(stacks)])
-        l_offs = nn.ModuleList([self._pred_mod(2) for _ in range(stacks)])
-        b_offs = nn.ModuleList([self._pred_mod(2) for _ in range(stacks)])
-        r_offs = nn.ModuleList([self._pred_mod(2) for _ in range(stacks)])
-
+        if config_debug.legacy:
+            t_offs = nn.ModuleList([self._pred_mod(2) for _ in range(stacks)])
+            l_offs = nn.ModuleList([self._pred_mod(2) for _ in range(stacks)])
+            b_offs = nn.ModuleList([self._pred_mod(2) for _ in range(stacks)])
+            r_offs = nn.ModuleList([self._pred_mod(2) for _ in range(stacks)])
+        else:
+            t_offs = nn.ModuleList([self._pred_mod(1) for _ in range(stacks)])
+            l_offs = nn.ModuleList([self._pred_mod(1) for _ in range(stacks)])
+            b_offs = nn.ModuleList([self._pred_mod(1) for _ in range(stacks)])
+            r_offs = nn.ModuleList([self._pred_mod(1) for _ in range(stacks)])
         super(model, self).__init__(
             hgs, tlbr_modules, t_heats, l_heats, b_heats, r_heats,
             t_tags, l_tags, b_tags, r_tags, t_offs, l_offs, b_offs, r_offs

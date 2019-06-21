@@ -57,10 +57,10 @@ def linenet(system_configs, db, k_ind, data_aug, debug):
     l_heatmaps = np.zeros((batch_size, categories, output_size[0], output_size[1]), dtype=np.float32)
     b_heatmaps = np.zeros((batch_size, categories, output_size[0], output_size[1]), dtype=np.float32)
     r_heatmaps = np.zeros((batch_size, categories, output_size[0], output_size[1]), dtype=np.float32)
-    t_regrs = np.zeros((batch_size, max_tag_len, 2), dtype=np.float32)
-    l_regrs = np.zeros((batch_size, max_tag_len, 2), dtype=np.float32)
-    b_regrs = np.zeros((batch_size, max_tag_len, 2), dtype=np.float32)
-    r_regrs = np.zeros((batch_size, max_tag_len, 2), dtype=np.float32)
+    t_regrs = np.zeros((batch_size, max_tag_len), dtype=np.float32)
+    l_regrs = np.zeros((batch_size, max_tag_len), dtype=np.float32)
+    b_regrs = np.zeros((batch_size, max_tag_len), dtype=np.float32)
+    r_regrs = np.zeros((batch_size, max_tag_len), dtype=np.float32)
     t_tags = np.zeros((batch_size, max_tag_len), dtype=np.int64)
     l_tags = np.zeros((batch_size, max_tag_len), dtype=np.int64)
     b_tags = np.zeros((batch_size, max_tag_len), dtype=np.int64)
@@ -150,10 +150,10 @@ def linenet(system_configs, db, k_ind, data_aug, debug):
                     r_heatmaps[b_ind, category, r, xbr] = 1
 
             tag_ind = tag_lens[b_ind]
-            t_regrs[b_ind, tag_ind, :] = [fxtl - xtl, fytl - ytl]
-            l_regrs[b_ind, tag_ind, :] = [fxtl - xtl, fytl - ytl]
-            b_regrs[b_ind, tag_ind, :] = [fxbr - xbr, fybr - ybr]
-            r_regrs[b_ind, tag_ind, :] = [fxbr - xbr, fybr - ybr]
+            t_regrs[b_ind, tag_ind] = fytl - ytl
+            l_regrs[b_ind, tag_ind] = fxtl - xtl
+            b_regrs[b_ind, tag_ind] = fybr - ybr
+            r_regrs[b_ind, tag_ind] = fxbr - xbr
             t_tags[b_ind, tag_ind] = ytl * output_size[1] + xtl
             b_tags[b_ind, tag_ind] = ybr * output_size[1] + xbr
             l_tags[b_ind, tag_ind] = ytl * output_size[1] + xtl

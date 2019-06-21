@@ -20,6 +20,7 @@ def draw_bboxes(image, bboxes, font_size=0.5, thresh=0.5, colors=None):
     Returns:
         An image with bounding boxes.
     """
+    thresh = 0.3
 
     image = image.copy()
     for cat_name in bboxes:

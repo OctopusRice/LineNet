@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import config_debug
 
-from .utils import residual, upsample, merge, _decode
+from .utils import residual, upsample, merge, _decode, _decode_line
 
 def _make_layer(inp_dim, out_dim, modules):
     layers  = [residual(inp_dim, out_dim)]
@@ -157,14 +157,14 @@ class hg_net(nn.Module):
         return self._test(*xs, **kwargs)
 
 
-class lines_net(nn.Module):
+class line_net(nn.Module):
     def __init__(
             self, hg, tlbr_modules, t_heats, l_heats, b_heats, r_heats,
             t_tags, l_tags, b_tags, r_tags, t_offs, l_offs, b_offs, r_offs
     ):
-        super(lines_net, self).__init__()
+        super(line_net, self).__init__()
 
-        self._decode = _decode
+        self._decode = _decode_line
 
         self.hg = hg
 
@@ -209,9 +209,9 @@ class lines_net(nn.Module):
         cnvs = self.hg(image)
 
         if config_debug.visualize_jh:
-            tlbr_mod, p1_conv1, p2_conv1, pool1, pool2, p_bn1, concat = self.tlbr_modules[-1](cnvs[-1])
+            tlbr_mod, p1_conv1, p2_conv1, p3_conv1, p4_conv1, pool1, pool2, pool3, pool4, p_concat, p_bn1 = self.tlbr_modules[-1](cnvs[-1])
         else:
-            tlbr_mod = self.tl_modules[-1](cnvs[-1])
+            tlbr_mod = self.tlbr_modules[-1](cnvs[-1])
 
         t_heat, l_heat, b_heat, r_heat = self.t_heats[-1](tlbr_mod), self.l_heats[-1](tlbr_mod), self.b_heats[-1](tlbr_mod), self.r_heats[-1](tlbr_mod)
         t_tag, l_tag, b_tag, r_tag = self.t_tags[-1](tlbr_mod), self.l_tags[-1](tlbr_mod), self.b_tags[-1](tlbr_mod), self.r_tags[-1](tlbr_mod)
@@ -221,7 +221,7 @@ class lines_net(nn.Module):
         if config_debug.visualize_jh:
             return self._decode(*outs,
                                 **kwargs), t_heat, l_heat, b_heat, r_heat, t_tag, l_tag, b_tag, r_tag, tlbr_mod, \
-                   p1_conv1, p2_conv1, pool1, pool2, p_bn1, concat, t_heat, l_heat, cnvs[-1]
+                   p1_conv1, p2_conv1, p3_conv1, p4_conv1, pool1, pool2, pool3, pool4, p_concat, p_bn1, t_heat, l_heat, cnvs[-1]
         else:
             return self._decode(*outs, **kwargs), t_heat, l_heat, b_heat, r_heat, t_tag, l_tag, b_tag, r_tag
 

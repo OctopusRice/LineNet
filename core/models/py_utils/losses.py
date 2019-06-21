@@ -77,6 +77,15 @@ def _off_loss(off, gt_off, mask):
     off_loss = off_loss / (num + 1e-4)
     return off_loss
 
+def _off_line_loss(off, gt_off, mask):
+    num = mask.float().sum()
+
+    off = off[mask]
+    gt_off = gt_off[mask]
+
+    off_loss = nn.functional.smooth_l1_loss(off, gt_off, reduction="sum")
+    off_loss = off_loss / (num + 1e-4)
+    return off_loss
 
 def _focal_loss_mask(preds, gt, mask):
     pos_inds = gt.eq(1)
@@ -210,7 +219,7 @@ class LineNet_Loss(nn.Module):
         self.off_weight  = off_weight
         self.focal_loss  = focal_loss
         self.ae_loss     = _ae_line_loss
-        self.off_loss    = _off_loss
+        self.off_loss    = _off_line_loss
 
     def forward(self, outs, targets):
         t_heats = outs[0]

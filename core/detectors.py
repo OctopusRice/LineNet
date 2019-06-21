@@ -24,7 +24,7 @@ class LineNet(Base):
         from .models.LineNet import model
 
         cfg_path   = get_file_path("..", "configs", "LineNet.json")
-        model_path = get_file_path("..", "cache", "nnet", "CornerNet", "LineNet_500000.pkl")
+        model_path = get_file_path("..", "cache", "nnet", "LineNet", "LineNet_40000.pkl")
 
         cfg_sys, cfg_db = load_cfg(cfg_path)
         sys_cfg = SystemConfig().update_config(cfg_sys)
