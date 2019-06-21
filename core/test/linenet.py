@@ -25,16 +25,17 @@ def decode(nnet, images, K, ae_threshold=0.5, kernel=3, num_dets=1000):
     if config_debug.visualize_jh:
         detections = nnet.test([images], ae_threshold=ae_threshold, test=True, K=K, kernel=kernel, num_dets=num_dets)
 
-        moduleNumber = ['5','2','2','3','3','4', '3.5', '6', '1']
-        moduleName = ['conv2', 'p1_conv1', 'p2_conv1', 'pool1', 'pool2', 'p_bn1', 'concat', 'tl_heat', 'backbone']
-        for id in range(5, 5 + len(moduleNumber)):
+        moduleNumber = ['5', '2', '2', '2', '2', '3', '3', '3', '3', '3.5', '4', '6', '6', '1']
+        moduleName = ['conv2', 'p1_conv1', 'p2_conv1', 'p3_conv1', 'p4_conv1', 'pool1', 'pool2', 'pool3', 'pool4', 'p_concat', 'p_bn1', 't_heat', 'l_heat', 'backbone']
+        startIdx = 9
+        for id in range(startIdx, startIdx + len(moduleNumber)):
             for idx in range(0, detections[id].size(0)):
                 for jdx in range(0, detections[id].size(1)):
                         pred = detections[id][idx][jdx]
                         pred = pred / pred.max() * 256
                         pred = pred.data.cpu().numpy()
 
-                        cv2.imwrite('./results_inter/all/' + moduleNumber[id-5] + '_' + moduleName[id-5] + '/' + moduleName[id-5] + '_' + str(idx) + '_' + str(jdx) + ".jpg", pred)
+                        cv2.imwrite('./results_inter/all/' + moduleNumber[id-startIdx] + '_' + moduleName[id-startIdx] + '/' + moduleName[id-startIdx] + '_' + str(idx) + '_' + str(jdx) + ".jpg", pred)
 
         return detections[0].data.cpu().numpy()
     detections = nnet.test([images], ae_threshold=ae_threshold, test=True, K=K, kernel=kernel, num_dets=num_dets)[0]
