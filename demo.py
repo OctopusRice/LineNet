@@ -1,14 +1,18 @@
 #!/usr/bin/env python
-
+import config_debug
 import cv2
-# from core.detectors import CornerNet_Saccade
-# from core.detectors import CornerNet
+from core.detectors import CornerNet_Saccade
+from core.detectors import CornerNet
 from core.detectors import LineNet
 from core.vis_utils import draw_bboxes
 
-# detector = CornerNet_Saccade()
-# detector = CornerNet()
-detector = LineNet()
+if config_debug.cfg_file == "CornerNet":
+    detector = CornerNet()
+elif config_debug.cfg_file == "LineNet":
+    detector = LineNet()
+else:
+    detector = CornerNet_Saccade()
+
 image    = cv2.imread("demo.jpg")
 
 bboxes = detector(image)

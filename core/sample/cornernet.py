@@ -83,10 +83,6 @@ def cornernet(system_configs, db, k_ind, data_aug, debug):
         # reading detections
         detections = db.detections(db_ind)
 
-        #################################################################
-        #################### added by JH_190607 #########################
-        #################################################################
-
         if config_debug.visualize_sampleFile:
             image2 = cv2.imread(image_path)
             for i_detection in detections:
@@ -148,8 +144,6 @@ def cornernet(system_configs, db, k_ind, data_aug, debug):
                 else:
                     cv2.circle(image2, (ifp[2].astype(np.int64), ifp[3].astype(np.int64)), 5, (0, 0, 255), 3)
             cv2.imwrite('ifp_Added' + str(b_ind) + '.jpg', image2)
-
-        #################################################################
 
         # cropping an image randomly
         if not debug and rand_crop:
@@ -274,17 +268,17 @@ def cornernet(system_configs, db, k_ind, data_aug, debug):
                 t += tl_heatmaps[b_ind, category]
             cv2.imwrite('ifp_lines_Added_img' + str(b_ind) + '.jpg', image3)
             cv2.imwrite('ifp_lines_Added_gt' + str(b_ind) + '.jpg', t * 256)
-            #################################################################
+
     if config_debug.visualize_sampleFile:
         exit()
 
     for b_ind in range(batch_size):
         tag_len = tag_lens[b_ind]
-        off_tl_len = tl_off_lens[b_ind] # added by JH_190607
-        off_br_len = br_off_lens[b_ind]  # added by JH_190607
+        off_tl_len = tl_off_lens[b_ind]
+        off_br_len = br_off_lens[b_ind]
         tag_masks[b_ind, :tag_len] = 1
-        tl_off_masks[b_ind, :off_tl_len] = 1 # added by JH_190607
-        br_off_masks[b_ind, :off_br_len] = 1  # added by JH_190607
+        tl_off_masks[b_ind, :off_tl_len] = 1
+        br_off_masks[b_ind, :off_br_len] = 1
 
     images      = torch.from_numpy(images)
     tl_heatmaps = torch.from_numpy(tl_heatmaps)

@@ -169,10 +169,10 @@ def _decode_line(
     r_heat = torch.sigmoid(r_heat)
 
     # perform nms on heatmaps
-    # t_heat = _nms(t_heat, kernel=kernel)
-    # l_heat = _nms(l_heat, kernel=kernel)
-    # b_heat = _nms(b_heat, kernel=kernel)
-    # r_heat = _nms(r_heat, kernel=kernel)
+    t_heat = _nms(t_heat, kernel=kernel)
+    l_heat = _nms(l_heat, kernel=kernel)
+    b_heat = _nms(b_heat, kernel=kernel)
+    r_heat = _nms(r_heat, kernel=kernel)
 
     t_scores, t_inds, t_clses, t_ys = _topk_line(t_heat, K=K)
     l_scores, l_inds, l_clses, l_xs = _topk_line(l_heat, K=K)
@@ -236,8 +236,9 @@ def _decode_line(
     b_tag = b_tag.view(batch, 1, 1, K, 1)
     r_tag = r_tag.view(batch, -1).gather(1, r_inds)
     r_tag = r_tag.view(batch, 1, 1, 1, K)
-    dists  = (torch.abs(t_tag - l_tag) + torch.abs(t_tag - b_tag) + torch.abs(t_tag - r_tag) + \
-              torch.abs(l_tag - b_tag) + torch.abs(l_tag - r_tag) + torch.abs(b_tag - r_tag)) / 6
+    dists  = (torch.abs(t_tag - l_tag) > ae_threshold).int() + (torch.abs(t_tag - b_tag) > ae_threshold).int() + \
+             (torch.abs(t_tag - r_tag) > ae_threshold).int() + (torch.abs(l_tag - b_tag) > ae_threshold).int() + \
+             (torch.abs(l_tag - r_tag) > ae_threshold).int() + (torch.abs(b_tag - r_tag) > ae_threshold).int()
 
     t_scores = t_scores.view(batch, K, 1, 1, 1).expand(batch, K, K, K, K)
     l_scores = l_scores.view(batch, 1, K, 1, 1).expand(batch, K, K, K, K)
@@ -254,7 +255,7 @@ def _decode_line(
                (l_clses != r_clses) + (b_clses != r_clses)
 
     # reject boxes based on distances
-    dist_inds = (dists > ae_threshold)
+    dist_inds = (dists > 0)
 
     # reject boxes based on widths and heights
     width_inds  = (r_xs < l_xs)
@@ -394,6 +395,44 @@ class corner_pool(nn.Module):
             return conv2
 
 class line_pool(nn.Module):
+    def __init__(self, dim, pool1):
+        super(line_pool, self).__init__()
+        self._init_layers(dim, pool1)
+
+    def _init_layers(self, dim, pool1):
+        self.p1_conv1 = convolution(3, dim, 128)
+
+        self.p_conv1 = nn.Conv2d(128, dim, (3, 3), padding=(1, 1), bias=False)
+        self.p_bn1   = nn.BatchNorm2d(dim)
+
+        self.conv1 = nn.Conv2d(dim, dim, (1, 1), bias=False)
+        self.bn1   = nn.BatchNorm2d(dim)
+        self.relu1 = nn.ReLU(inplace=True)
+
+        self.conv2 = convolution(3, dim, dim)
+
+        self.pool1 = pool1()
+
+    def forward(self, x):
+        # pool 1
+        p1_conv1 = self.p1_conv1(x)
+        pool1    = self.pool1(p1_conv1)
+
+        pool1 = pool1.expand_as(p1_conv1)
+        p_conv1 = self.p_conv1(pool1)
+        p_bn1   = self.p_bn1(p_conv1)
+
+        conv1 = self.conv1(x)
+        bn1   = self.bn1(conv1)
+        relu1 = self.relu1(p_bn1 + bn1)
+
+        conv2 = self.conv2(relu1)
+        if config_debug.visualize_jh:
+            return conv2, p1_conv1, pool1, p_bn1
+        else:
+            return conv2
+
+class line_pool_legacy(nn.Module):
     def __init__(self, dim, pool1, pool2):
         super(line_pool, self).__init__()
         self._init_layers(dim, pool1, pool2)

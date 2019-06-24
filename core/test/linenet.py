@@ -25,8 +25,14 @@ def decode(nnet, images, K, ae_threshold=0.5, kernel=3, num_dets=1000):
     if config_debug.visualize_jh:
         detections = nnet.test([images], ae_threshold=ae_threshold, test=True, K=K, kernel=kernel, num_dets=num_dets)
 
-        moduleNumber = ['5', '2', '2', '2', '2', '3', '3', '3', '3', '3.5', '4', '6', '6', '1']
-        moduleName = ['conv2', 'p1_conv1', 'p2_conv1', 'p3_conv1', 'p4_conv1', 'pool1', 'pool2', 'pool3', 'pool4', 'p_concat', 'p_bn1', 't_heat', 'l_heat', 'backbone']
+        if config_debug.legacy:
+            moduleNumber = ['5', '2', '2', '2', '2', '3', '3', '3', '3', '3.5', '4', '6', '6', '1']
+            moduleName = ['conv2', 'p1_conv1', 'p2_conv1', 'p3_conv1', 'p4_conv1', 'pool1', 'pool2', 'pool3', 'pool4', 'p_concat', 'p_bn1', 't_heat', 'l_heat', 'backbone']
+        else:
+            moduleNumber = ['5', '2', '2', '2', '2', '3', '3', '3', '3', '4', '4', '4', '4', '6', '6', '1']
+            moduleName = ['conv2', 'p1_conv1', 'p2_conv1', 'p3_conv1', 'p4_conv1', 'pool1', 'pool2', 'pool3', 'pool4',
+                          'p_bn1', 'p_bn2', 'p_bn3', 'p_bn4', 't_heat', 'l_heat', 'backbone']
+
         startIdx = 9
         for id in range(startIdx, startIdx + len(moduleNumber)):
             for idx in range(0, detections[id].size(0)):
@@ -156,7 +162,7 @@ def linenet_inference(db, nnet, image, decode_func=decode):
         dets = decode_func(nnet, images, K, ae_threshold=ae_threshold, kernel=nms_kernel, num_dets=num_dets)
         if test_flipped:
             dets[1, :, [0, 2]] = out_width - dets[1, :, [2, 0]]
-            dets = dets.reshape(1, -1, 8)
+            dets = dets.reshape(1, -1, 10)
 
         rescale_dets_(dets, ratios, borders, sizes)
         dets[:, :, 0:4] /= scale
@@ -176,7 +182,7 @@ def linenet_inference(db, nnet, image, decode_func=decode):
     top_bboxes = {}
     for j in range(categories):
         keep_inds = (classes == j)
-        top_bboxes[j + 1] = detections[keep_inds][:, 0:7].astype(np.float32)
+        top_bboxes[j + 1] = detections[keep_inds][:, 0:9].astype(np.float32)
         if merge_bbox:
             soft_nms_merge(top_bboxes[j + 1], Nt=nms_threshold, method=nms_algorithm, weight_exp=weight_exp)
         else:

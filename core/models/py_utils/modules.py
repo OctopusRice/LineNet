@@ -158,8 +158,12 @@ class hg_net(nn.Module):
 
 
 class line_net(nn.Module):
+    # def __init__(
+    #         self, hg, t_modules, l_modules, b_modules, r_modules, t_heats, l_heats, b_heats, r_heats,
+    #         t_tags, l_tags, b_tags, r_tags, t_offs, l_offs, b_offs, r_offs
+    # ):
     def __init__(
-            self, hg, tlbr_modules, t_heats, l_heats, b_heats, r_heats,
+            self, hg, t_modules, l_modules, b_modules, r_modules, t_heats, l_heats, b_heats, r_heats,
             t_tags, l_tags, b_tags, r_tags, t_offs, l_offs, b_offs, r_offs
     ):
         super(line_net, self).__init__()
@@ -168,7 +172,10 @@ class line_net(nn.Module):
 
         self.hg = hg
 
-        self.tlbr_modules = tlbr_modules
+        self.t_modules = t_modules
+        self.l_modules = l_modules
+        self.b_modules = b_modules
+        self.r_modules = r_modules
 
         self.t_heats = t_heats
         self.l_heats = l_heats
@@ -189,39 +196,81 @@ class line_net(nn.Module):
         image = xs[0]
         cnvs = self.hg(image)
 
-        tlbr_modules = [tlbr_mod_(cnv) for tlbr_mod_, cnv in zip(self.tlbr_modules, cnvs)]
-        t_heats = [t_heat_(t_mod) for t_heat_, t_mod in zip(self.t_heats, tlbr_modules)]
-        l_heats = [l_heat_(l_mod) for l_heat_, l_mod in zip(self.l_heats, tlbr_modules)]
-        b_heats = [b_heat_(b_mod) for b_heat_, b_mod in zip(self.b_heats, tlbr_modules)]
-        r_heats = [r_heat_(r_mod) for r_heat_, r_mod in zip(self.r_heats, tlbr_modules)]
-        t_tags = [t_tag_(t_mod) for t_tag_, t_mod in zip(self.t_tags, tlbr_modules)]
-        l_tags = [l_tag_(l_mod) for l_tag_, l_mod in zip(self.l_tags, tlbr_modules)]
-        b_tags = [b_tag_(b_mod) for b_tag_, b_mod in zip(self.b_tags, tlbr_modules)]
-        r_tags = [r_tag_(r_mod) for r_tag_, r_mod in zip(self.r_tags, tlbr_modules)]
-        t_offs = [t_off_(t_mod) for t_off_, t_mod in zip(self.t_offs, tlbr_modules)]
-        l_offs = [l_off_(l_mod) for l_off_, l_mod in zip(self.l_offs, tlbr_modules)]
-        b_offs = [b_off_(b_mod) for b_off_, b_mod in zip(self.b_offs, tlbr_modules)]
-        r_offs = [r_off_(r_mod) for r_off_, r_mod in zip(self.r_offs, tlbr_modules)]
-        return [t_heats, l_heats, b_heats, r_heats, t_tags, l_tags, b_tags, r_tags, t_offs, l_offs, b_offs, r_offs]
+        if config_debug.legacy:
+            tlbr_modules = [tlbr_mod_(cnv) for tlbr_mod_, cnv in zip(self.tlbr_modules, cnvs)]
+            t_heats = [t_heat_(t_mod) for t_heat_, t_mod in zip(self.t_heats, tlbr_modules)]
+            l_heats = [l_heat_(l_mod) for l_heat_, l_mod in zip(self.l_heats, tlbr_modules)]
+            b_heats = [b_heat_(b_mod) for b_heat_, b_mod in zip(self.b_heats, tlbr_modules)]
+            r_heats = [r_heat_(r_mod) for r_heat_, r_mod in zip(self.r_heats, tlbr_modules)]
+            t_tags = [t_tag_(t_mod) for t_tag_, t_mod in zip(self.t_tags, tlbr_modules)]
+            l_tags = [l_tag_(l_mod) for l_tag_, l_mod in zip(self.l_tags, tlbr_modules)]
+            b_tags = [b_tag_(b_mod) for b_tag_, b_mod in zip(self.b_tags, tlbr_modules)]
+            r_tags = [r_tag_(r_mod) for r_tag_, r_mod in zip(self.r_tags, tlbr_modules)]
+            t_offs = [t_off_(t_mod) for t_off_, t_mod in zip(self.t_offs, tlbr_modules)]
+            l_offs = [l_off_(l_mod) for l_off_, l_mod in zip(self.l_offs, tlbr_modules)]
+            b_offs = [b_off_(b_mod) for b_off_, b_mod in zip(self.b_offs, tlbr_modules)]
+            r_offs = [r_off_(r_mod) for r_off_, r_mod in zip(self.r_offs, tlbr_modules)]
+            return [t_heats, l_heats, b_heats, r_heats, t_tags, l_tags, b_tags, r_tags, t_offs, l_offs, b_offs, r_offs]
+        else:
+            t_modules = [t_mod_(cnv) for t_mod_, cnv in zip(self.t_modules, cnvs)]
+            l_modules = [l_mod_(cnv) for l_mod_, cnv in zip(self.l_modules, cnvs)]
+            b_modules = [b_mod_(cnv) for b_mod_, cnv in zip(self.b_modules, cnvs)]
+            r_modules = [r_mod_(cnv) for r_mod_, cnv in zip(self.r_modules, cnvs)]
+            t_heats = [t_heat_(t_mod) for t_heat_, t_mod in zip(self.t_heats, t_modules)]
+            l_heats = [l_heat_(l_mod) for l_heat_, l_mod in zip(self.l_heats, l_modules)]
+            b_heats = [b_heat_(b_mod) for b_heat_, b_mod in zip(self.b_heats, b_modules)]
+            r_heats = [r_heat_(r_mod) for r_heat_, r_mod in zip(self.r_heats, r_modules)]
+            t_tags = [t_tag_(t_mod) for t_tag_, t_mod in zip(self.t_tags, t_modules)]
+            l_tags = [l_tag_(l_mod) for l_tag_, l_mod in zip(self.l_tags, l_modules)]
+            b_tags = [b_tag_(b_mod) for b_tag_, b_mod in zip(self.b_tags, b_modules)]
+            r_tags = [r_tag_(r_mod) for r_tag_, r_mod in zip(self.r_tags, r_modules)]
+            t_offs = [t_off_(t_mod) for t_off_, t_mod in zip(self.t_offs, t_modules)]
+            l_offs = [l_off_(l_mod) for l_off_, l_mod in zip(self.l_offs, l_modules)]
+            b_offs = [b_off_(b_mod) for b_off_, b_mod in zip(self.b_offs, b_modules)]
+            r_offs = [r_off_(r_mod) for r_off_, r_mod in zip(self.r_offs, r_modules)]
+            return [t_heats, l_heats, b_heats, r_heats, t_tags, l_tags, b_tags, r_tags, t_offs, l_offs, b_offs, r_offs]
 
     def _test(self, *xs, **kwargs):
         image = xs[0]
         cnvs = self.hg(image)
 
         if config_debug.visualize_jh:
-            tlbr_mod, p1_conv1, p2_conv1, p3_conv1, p4_conv1, pool1, pool2, pool3, pool4, p_concat, p_bn1 = self.tlbr_modules[-1](cnvs[-1])
+            if config_debug.legacy:
+                tlbr_mod, p1_conv1, p2_conv1, p3_conv1, p4_conv1, pool1, pool2, pool3, pool4, p_concat, p_bn1 = self.tlbr_modules[-1](cnvs[-1])
+            else:
+                t_mod, p1_conv1, pool1, p_bn1 = self.t_modules[-1](cnvs[-1])
+                l_mod, p2_conv1, pool2, p_bn2 = self.l_modules[-1](cnvs[-1])
+                b_mod, p3_conv1, pool3, p_bn3 = self.b_modules[-1](cnvs[-1])
+                r_mod, p4_conv1, pool4, p_bn4 = self.r_modules[-1](cnvs[-1])
         else:
-            tlbr_mod = self.tlbr_modules[-1](cnvs[-1])
+            t_mod = self.t_modules[-1](cnvs[-1])
+            l_mod = self.l_modules[-1](cnvs[-1])
+            b_mod = self.b_modules[-1](cnvs[-1])
+            r_mod = self.r_modules[-1](cnvs[-1])
 
-        t_heat, l_heat, b_heat, r_heat = self.t_heats[-1](tlbr_mod), self.l_heats[-1](tlbr_mod), self.b_heats[-1](tlbr_mod), self.r_heats[-1](tlbr_mod)
-        t_tag, l_tag, b_tag, r_tag = self.t_tags[-1](tlbr_mod), self.l_tags[-1](tlbr_mod), self.b_tags[-1](tlbr_mod), self.r_tags[-1](tlbr_mod)
-        t_off, l_off, b_off, r_off = self.t_offs[-1](tlbr_mod), self.l_offs[-1](tlbr_mod), self.b_offs[-1](tlbr_mod), self.r_offs[-1](tlbr_mod)
+        if config_debug.legacy:
+            t_heat, l_heat, b_heat, r_heat = self.t_heats[-1](tlbr_mod), self.l_heats[-1](tlbr_mod), self.b_heats[-1](tlbr_mod), self.r_heats[-1](tlbr_mod)
+            t_tag, l_tag, b_tag, r_tag = self.t_tags[-1](tlbr_mod), self.l_tags[-1](tlbr_mod), self.b_tags[-1](tlbr_mod), self.r_tags[-1](tlbr_mod)
+            t_off, l_off, b_off, r_off = self.t_offs[-1](tlbr_mod), self.l_offs[-1](tlbr_mod), self.b_offs[-1](tlbr_mod), self.r_offs[-1](tlbr_mod)
+        else:
+            t_heat, l_heat, b_heat, r_heat = self.t_heats[-1](t_mod), self.l_heats[-1](l_mod), self.b_heats[-1](
+                b_mod), self.r_heats[-1](r_mod)
+            t_tag, l_tag, b_tag, r_tag = self.t_tags[-1](t_mod), self.l_tags[-1](l_mod), self.b_tags[-1](
+                b_mod), self.r_tags[-1](r_mod)
+            t_off, l_off, b_off, r_off = self.t_offs[-1](t_mod), self.l_offs[-1](l_mod), self.b_offs[-1](
+                b_mod), self.r_offs[-1](r_mod)
 
         outs = [t_heat, l_heat, b_heat, r_heat, t_tag, l_tag, b_tag, r_tag, t_off, l_off, b_off, r_off]
         if config_debug.visualize_jh:
-            return self._decode(*outs,
-                                **kwargs), t_heat, l_heat, b_heat, r_heat, t_tag, l_tag, b_tag, r_tag, tlbr_mod, \
-                   p1_conv1, p2_conv1, p3_conv1, p4_conv1, pool1, pool2, pool3, pool4, p_concat, p_bn1, t_heat, l_heat, cnvs[-1]
+            if config_debug.legacy:
+                return self._decode(*outs,
+                                    **kwargs), t_heat, l_heat, b_heat, r_heat, t_tag, l_tag, b_tag, r_tag, tlbr_mod, \
+                       p1_conv1, p2_conv1, p3_conv1, p4_conv1, pool1, pool2, pool3, pool4, p_concat, p_bn1, t_heat, l_heat, cnvs[-1]
+            else:
+                return self._decode(*outs,
+                                    **kwargs), t_heat, l_heat, b_heat, r_heat, t_tag, l_tag, b_tag, r_tag, tlbr_mod, \
+                       p1_conv1, p2_conv1, p3_conv1, p4_conv1, pool1, pool2, pool3, pool4, p_bn1, p_bn2, p_bn3, p_bn4, t_heat, l_heat, \
+                       cnvs[-1]
         else:
             return self._decode(*outs, **kwargs), t_heat, l_heat, b_heat, r_heat, t_tag, l_tag, b_tag, r_tag
 

@@ -2,6 +2,7 @@ import cv2
 import math
 import numpy as np
 import torch
+import config_debug
 
 from .utils import random_crop, draw_gaussian_fullline, gaussian_radius, normalize_, color_jittering_, lighting_
 
@@ -83,6 +84,12 @@ def linenet(system_configs, db, k_ind, data_aug, debug):
         # reading detections
         detections = db.detections(db_ind)
 
+        if config_debug.visualize_sampleFile:
+            image2 = cv2.imread(image_path)
+            for i_detection in detections:
+                cv2.rectangle(image2, (i_detection[0].astype(np.int64),i_detection[1].astype(np.int64)), (i_detection[2].astype(np.int64), i_detection[3].astype(np.int64)), (255,0,0), 3)
+            cv2.imwrite('ifp_Added' + str(b_ind) + '.jpg', image2)
+
         # cropping an image randomly
         if not debug and rand_crop:
             image, detections = random_crop(image, detections, rand_scales, input_size, border=border)
@@ -94,7 +101,7 @@ def linenet(system_configs, db, k_ind, data_aug, debug):
         height_ratio = output_size[0] / input_size[0]
 
         # flipping an image randomly
-        if not debug and np.random.uniform() > 0.5:
+        if not debug and not config_debug.visualize_sampleFile and np.random.uniform() > 0.5:
             image[:] = image[:, ::-1, :]
             width = image.shape[1]
             detections[:, [0, 2]] = width - detections[:, [2, 0]] - 1
@@ -107,6 +114,12 @@ def linenet(system_configs, db, k_ind, data_aug, debug):
                     lighting_(data_rng, image, 0.1, db.eig_val, db.eig_vec)
             normalize_(image, db.mean, db.std)
         images[b_ind] = image.transpose((2, 0, 1))
+
+        if config_debug.visualize_sampleFile:
+            image3 = image.copy() * 256
+            for i_detection in detections:
+                cv2.rectangle(image3, (i_detection[0].astype(np.int64), i_detection[1].astype(np.int64)),
+                              (i_detection[2].astype(np.int64), i_detection[3].astype(np.int64)), (255, 0, 0), 3)
 
         for ind, detection in enumerate(detections):
             category = int(detection[-1]) - 1
@@ -159,6 +172,16 @@ def linenet(system_configs, db, k_ind, data_aug, debug):
             l_tags[b_ind, tag_ind] = ytl * output_size[1] + xtl
             r_tags[b_ind, tag_ind] = ybr * output_size[1] + xbr
             tag_lens[b_ind] += 1
+
+        if config_debug.visualize_sampleFile:
+            t = np.zeros((output_size[0], output_size[1]), dtype=np.float32)
+            for category in range(0, categories):
+                t += t_heatmaps[b_ind, category]
+            cv2.imwrite('ifp_lines_Added_img' + str(b_ind) + '.jpg', image3)
+            cv2.imwrite('ifp_lines_Added_gt' + str(b_ind) + '.jpg', t * 256)
+
+    if config_debug.visualize_sampleFile:
+        exit()
 
     for b_ind in range(batch_size):
         tag_len = tag_lens[b_ind]
