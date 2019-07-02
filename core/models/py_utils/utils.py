@@ -206,10 +206,7 @@ def _decode_line(
             l_regr = l_regr[:, 0, :, :]
             b_regr = b_regr[:, 1, :, :]
             r_regr = r_regr[:, 0, :, :]
-        # t_regr = t_regr.squeeze()
-        # l_regr = l_regr.squeeze()
-        # b_regr = b_regr.squeeze()
-        # r_regr = r_regr.squeeze()
+
         t_regr = t_regr.view(batch, -1).gather(1, t_inds)
         t_regr = t_regr.view(batch, K, 1, 1, 1)
         l_regr = l_regr.view(batch, -1).gather(1, l_inds)
@@ -432,9 +429,9 @@ class line_pool(nn.Module):
         else:
             return conv2
 
-class line_pool_legacy(nn.Module):
+class line_pool_tlbr(nn.Module):
     def __init__(self, dim, pool1, pool2):
-        super(line_pool, self).__init__()
+        super(line_pool_tlbr, self).__init__()
         self._init_layers(dim, pool1, pool2)
 
     def _init_layers(self, dim, pool1, pool2):

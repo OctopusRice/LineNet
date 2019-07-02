@@ -4,7 +4,7 @@ import config_debug
 
 from .py_utils import HorizontalLinePool, VerticalLinePool
 
-from .py_utils.utils import convolution, residual, line_pool, line_pool_legacy
+from .py_utils.utils import convolution, residual, line_pool
 from .py_utils.losses import LineNet_Loss
 from .py_utils.modules import hg_module, hg, line_net
 
@@ -49,13 +49,10 @@ class model(line_net):
 
         hgs = hg(pre, hg_mods, cnvs, inters, cnvs_, inters_)
 
-        if config_debug.legacy:
-            tlbr_modules = nn.ModuleList([line_pool_legacy(256, VerticalLinePool, HorizontalLinePool) for _ in range(stacks)])
-        else:
-            t_modules = nn.ModuleList([line_pool(256, HorizontalLinePool) for _ in range(stacks)])
-            l_modules = nn.ModuleList([line_pool(256, VerticalLinePool) for _ in range(stacks)])
-            b_modules = nn.ModuleList([line_pool(256, HorizontalLinePool) for _ in range(stacks)])
-            r_modules = nn.ModuleList([line_pool(256, VerticalLinePool) for _ in range(stacks)])
+        t_modules = nn.ModuleList([line_pool(256, HorizontalLinePool) for _ in range(stacks)])
+        l_modules = nn.ModuleList([line_pool(256, VerticalLinePool) for _ in range(stacks)])
+        b_modules = nn.ModuleList([line_pool(256, HorizontalLinePool) for _ in range(stacks)])
+        r_modules = nn.ModuleList([line_pool(256, VerticalLinePool) for _ in range(stacks)])
 
         t_heats = nn.ModuleList([self._pred_mod(80) for _ in range(stacks)])
         l_heats = nn.ModuleList([self._pred_mod(80) for _ in range(stacks)])
@@ -72,20 +69,11 @@ class model(line_net):
         b_tags = nn.ModuleList([self._pred_mod(1) for _ in range(stacks)])
         r_tags = nn.ModuleList([self._pred_mod(1) for _ in range(stacks)])
 
-        if config_debug.legacy:
-            t_offs = nn.ModuleList([self._pred_mod(2) for _ in range(stacks)])
-            l_offs = nn.ModuleList([self._pred_mod(2) for _ in range(stacks)])
-            b_offs = nn.ModuleList([self._pred_mod(2) for _ in range(stacks)])
-            r_offs = nn.ModuleList([self._pred_mod(2) for _ in range(stacks)])
-        else:
-            t_offs = nn.ModuleList([self._pred_mod(1) for _ in range(stacks)])
-            l_offs = nn.ModuleList([self._pred_mod(1) for _ in range(stacks)])
-            b_offs = nn.ModuleList([self._pred_mod(1) for _ in range(stacks)])
-            r_offs = nn.ModuleList([self._pred_mod(1) for _ in range(stacks)])
-        # super(model, self).__init__(
-        #     hgs, tlbr_modules, t_heats, l_heats, b_heats, r_heats,
-        #     t_tags, l_tags, b_tags, r_tags, t_offs, l_offs, b_offs, r_offs
-        # )
+        t_offs = nn.ModuleList([self._pred_mod(1) for _ in range(stacks)])
+        l_offs = nn.ModuleList([self._pred_mod(1) for _ in range(stacks)])
+        b_offs = nn.ModuleList([self._pred_mod(1) for _ in range(stacks)])
+        r_offs = nn.ModuleList([self._pred_mod(1) for _ in range(stacks)])
+
         super(model, self).__init__(
             hgs, t_modules, l_modules, b_modules, r_modules, t_heats, l_heats, b_heats, r_heats,
             t_tags, l_tags, b_tags, r_tags, t_offs, l_offs, b_offs, r_offs

@@ -24,7 +24,7 @@ class LineNet(Base):
         from .models.LineNet import model
 
         cfg_path   = get_file_path("..", "configs", "LineNet.json")
-        model_path = get_file_path("..", "cache", "nnet", "LineNet", "LineNet_220000.pkl")
+        model_path = get_file_path("..", "cache", "nnet", "LineNet", "LineNet_10.pkl")
 
         cfg_sys, cfg_db = load_cfg(cfg_path)
         sys_cfg = SystemConfig().update_config(cfg_sys)
@@ -32,6 +32,21 @@ class LineNet(Base):
 
         cornernet = load_nnet(sys_cfg, model())
         super(LineNet, self).__init__(coco, cornernet, linenet_inference, model=model_path)
+
+class LineNet_tlbr(Base):
+    def __init__(self):
+        from .test.linenet import linenet_inference
+        from .models.LineNet_tlbr import model
+
+        cfg_path   = get_file_path("..", "configs", "LineNet_tlbr.json")
+        model_path = get_file_path("..", "cache", "nnet", "LineNet_tlbr", "LineNet_tlbr_220000.pkl")
+
+        cfg_sys, cfg_db = load_cfg(cfg_path)
+        sys_cfg = SystemConfig().update_config(cfg_sys)
+        coco    = COCO(cfg_db)
+
+        cornernet = load_nnet(sys_cfg, model())
+        super(LineNet_tlbr, self).__init__(coco, cornernet, linenet_inference, model=model_path)
 
 class CornerNet_Squeeze(Base):
     def __init__(self):

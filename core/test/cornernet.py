@@ -30,7 +30,7 @@ def decode(nnet, images, K, ae_threshold=0.5, kernel=3, num_dets=1000):
         for id in range(5, 5 + len(moduleNumber)):
             for idx in range(0, detections[id].size(0)):
                 for jdx in range(0, detections[id].size(1)):
-                        pred = detections[id][idx][jdx]
+                        pred = detections[id][idx][jdx].abs()
                         pred = pred / pred.max() * 256
                         pred = pred.data.cpu().numpy()
 
