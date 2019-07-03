@@ -1,12 +1,13 @@
-visualize_jh = False
+visualize_jh = True
 visualize_sampleFile = False
 
-is_ifpGT = False
+is_ifpGT = True
 is_lineGT = False
-legacy = True
 
-cfg_file = "CornerNet"
+cfg_file = "CornerNet_Saccade"
+# cfg_file = "CornerNet_ifp_Saccade"
 # cfg_file = "LineNet"
+
 # cfg_file = "LineNet_tlbr"
 
 workers = 1
@@ -17,7 +18,6 @@ if visualize_sampleFile:
 if cfg_file == "LineNet":
     is_ifpGT = False
     is_lineGT = False
-    legacy = False
 
 if cfg_file == "LineNet_tlbr":
     tlbr = True

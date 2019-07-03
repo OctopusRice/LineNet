@@ -201,12 +201,6 @@ def _decode_line(
         r_xs_binds = (r_xs == width  - 1)
 
     if t_regr is not None and l_regr is not None and b_regr is not None and r_regr is not None:
-        if config_debug.legacy:
-            t_regr = t_regr[:, 1, :, :]
-            l_regr = l_regr[:, 0, :, :]
-            b_regr = b_regr[:, 1, :, :]
-            r_regr = r_regr[:, 0, :, :]
-
         t_regr = t_regr.view(batch, -1).gather(1, t_inds)
         t_regr = t_regr.view(batch, K, 1, 1, 1)
         l_regr = l_regr.view(batch, -1).gather(1, l_inds)

@@ -66,16 +66,10 @@ class model(line_net_tlbr):
         b_tags = nn.ModuleList([self._pred_mod(1) for _ in range(stacks)])
         r_tags = nn.ModuleList([self._pred_mod(1) for _ in range(stacks)])
 
-        if config_debug.legacy:
-            t_offs = nn.ModuleList([self._pred_mod(2) for _ in range(stacks)])
-            l_offs = nn.ModuleList([self._pred_mod(2) for _ in range(stacks)])
-            b_offs = nn.ModuleList([self._pred_mod(2) for _ in range(stacks)])
-            r_offs = nn.ModuleList([self._pred_mod(2) for _ in range(stacks)])
-        else:
-            t_offs = nn.ModuleList([self._pred_mod(1) for _ in range(stacks)])
-            l_offs = nn.ModuleList([self._pred_mod(1) for _ in range(stacks)])
-            b_offs = nn.ModuleList([self._pred_mod(1) for _ in range(stacks)])
-            r_offs = nn.ModuleList([self._pred_mod(1) for _ in range(stacks)])
+        t_offs = nn.ModuleList([self._pred_mod(1) for _ in range(stacks)])
+        l_offs = nn.ModuleList([self._pred_mod(1) for _ in range(stacks)])
+        b_offs = nn.ModuleList([self._pred_mod(1) for _ in range(stacks)])
+        r_offs = nn.ModuleList([self._pred_mod(1) for _ in range(stacks)])
 
         super(model, self).__init__(
             hgs, tlbr_modules, t_heats, l_heats, b_heats, r_heats,
