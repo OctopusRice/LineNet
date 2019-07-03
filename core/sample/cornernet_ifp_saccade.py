@@ -179,51 +179,51 @@ def cornernet_ifp_saccade(system_configs, db, k_ind, data_aug, debug):
                 cv2.rectangle(image2, (i_detection[0].astype(np.int64),i_detection[1].astype(np.int64)), (i_detection[2].astype(np.int64), i_detection[3].astype(np.int64)), (255,0,0), 3)
 
         ifpGT = []
-        if config_debug.is_ifpGT:
-            for i in range(0, len(orig_detections)):
-                i_detection = orig_detections[i]
-                i_width, i_height = i_detection[2] - i_detection[0], i_detection[3] - i_detection[1]
-                for j in range(i + 1, len(orig_detections)):
-                    j_detection = orig_detections[j]
-                    # ifp for only same category
-                    if i_detection[4] != j_detection[4]: continue
+        for i in range(0, len(orig_detections)):
+            i_detection = orig_detections[i]
+            i_width, i_height = i_detection[2] - i_detection[0], i_detection[3] - i_detection[1]
+            for j in range(i + 1, len(orig_detections)):
+                j_detection = orig_detections[j]
+                # ifp for only same category
+                if i_detection[4] != j_detection[4]: continue
 
-                    # TL inevitable false positive ground truth
-                    j_width, j_height = j_detection[2] - j_detection[0], j_detection[3] - j_detection[1]
-                    if i_width * i_height > j_width * j_height:
-                        w = i_width
-                        h = i_width
-                    else:
-                        w = j_width
-                        h = j_height
+                # TL inevitable false positive ground truth
+                j_width, j_height = j_detection[2] - j_detection[0], j_detection[3] - j_detection[1]
+                if i_width * i_height > j_width * j_height:
+                    w = i_width
+                    h = i_width
+                else:
+                    w = j_width
+                    h = j_height
 
-                    if i_detection[0] < j_detection[0] and i_detection[1] > j_detection[1]:
-                        ifpGT.append([i_detection[0],
-                                      j_detection[1],
-                                      i_detection[0] + w,
-                                      j_detection[1] + h,
-                                      i_detection[4]])
-                    elif i_detection[0] > j_detection[0] and i_detection[1] < j_detection[1]:
-                        ifpGT.append([j_detection[0],
-                                      i_detection[1],
-                                      j_detection[0] + w,
-                                      i_detection[1] + h,
-                                      i_detection[4]])
+                if i_detection[0] < j_detection[0] and i_detection[1] > j_detection[1]:
+                    ifpGT.append([i_detection[0],
+                                  j_detection[1],
+                                  i_detection[0] + w,
+                                  j_detection[1] + h,
+                                  i_detection[4]])
+                elif i_detection[0] > j_detection[0] and i_detection[1] < j_detection[1]:
+                    ifpGT.append([j_detection[0],
+                                  i_detection[1],
+                                  j_detection[0] + w,
+                                  i_detection[1] + h,
+                                  i_detection[4]])
 
-                    # BR inevitable false positive ground truth
-                    if i_detection[2] < j_detection[2] and i_detection[3] > j_detection[3]:
-                        ifpGT.append([j_detection[2] - w,
-                                      i_detection[3] - h,
-                                      j_detection[2],
-                                      i_detection[3],
-                                      -i_detection[4]])
-                    elif i_detection[2] > j_detection[2] and i_detection[3] < j_detection[3]:
-                        ifpGT.append([i_detection[2] - w,
-                                      j_detection[3] - h,
-                                      i_detection[2],
-                                      j_detection[3],
-                                      -i_detection[4]])
+                # BR inevitable false positive ground truth
+                if i_detection[2] < j_detection[2] and i_detection[3] > j_detection[3]:
+                    ifpGT.append([j_detection[2] - w,
+                                  i_detection[3] - h,
+                                  j_detection[2],
+                                  i_detection[3],
+                                  -i_detection[4]])
+                elif i_detection[2] > j_detection[2] and i_detection[3] < j_detection[3]:
+                    ifpGT.append([i_detection[2] - w,
+                                  j_detection[3] - h,
+                                  i_detection[2],
+                                  j_detection[3],
+                                  -i_detection[4]])
 
+        len_oriDetections = len(orig_detections)
         if len(ifpGT) > 0:
             orig_detections = np.concatenate((orig_detections, ifpGT), axis=0)
 
@@ -248,7 +248,7 @@ def cornernet_ifp_saccade(system_configs, db, k_ind, data_aug, debug):
 
         orig_detections[:, 0:4:2] *= scale
         orig_detections[:, 1:4:2] *= scale
-        
+
         image, detections = scale_image_detections(image, detections, scale)
         ref_detection     = detections[ref_ind].copy()
 
@@ -325,7 +325,8 @@ def cornernet_ifp_saccade(system_configs, db, k_ind, data_aug, debug):
                 radius = gaussian_rad
 
             if overlap and valid:
-                if ind >= len(detections) - len(ifpGT):
+                if keep_inds[ind] >= len_oriDetections:
+                # if ind >= len(detections) - len(ifpGT):
                     if category >= 0:
                         draw_gaussian(tl_heats[b_ind, category], [xtl, ytl], radius)
                     else:
@@ -335,7 +336,8 @@ def cornernet_ifp_saccade(system_configs, db, k_ind, data_aug, debug):
                     draw_gaussian(tl_heats[b_ind, category], [xtl, ytl], radius)
                     draw_gaussian(br_heats[b_ind, category], [xbr, ybr], radius)
 
-                if ind < len(detections) - len(ifpGT):
+                if keep_inds[ind] < len_oriDetections:
+                # if ind < len(detections) - len(ifpGT):
                     tag_ind = tag_lens[b_ind]
                     tl_regrs[b_ind, tag_ind, :] = [fxtl - xtl, fytl - ytl]
                     br_regrs[b_ind, tag_ind, :] = [fxbr - xbr, fybr - ybr]
@@ -349,11 +351,14 @@ def cornernet_ifp_saccade(system_configs, db, k_ind, data_aug, debug):
                         f.write(str(image_path) + ' ' + str(db_ind))
                     continue
 
-                if ind < len(detections) - len(ifpGT) or category >= 0:
+                if keep_inds[ind] < len_oriDetections or category >= 0:
+                # if ind < len(detections) - len(ifpGT) or category >= 0:
                     tl_regrs[b_ind, tl_off_ind, :] = [fxtl - xtl, fytl - ytl]
                     tl_off_tags[b_ind, tl_off_ind] = ytl * output_size[1] + xtl
                     tl_off_lens[b_ind] += 1
-                if ind < len(detections) - len(ifpGT) or category < 0:
+
+                if keep_inds[ind] < len_oriDetections or category < 0:
+                # if ind < len(detections) - len(ifpGT) or category < 0:
                     br_regrs[b_ind, br_off_ind, :] = [fxbr - xbr, fybr - ybr]
                     br_off_tags[b_ind, br_off_ind] = ybr * output_size[1] + xbr
                     br_off_lens[b_ind] += 1
@@ -366,7 +371,8 @@ def cornernet_ifp_saccade(system_configs, db, k_ind, data_aug, debug):
                 cv2.imwrite('ifp_lines_Added_gt' + str(b_ind) + '.jpg', t * 256)
             else:
                 # ??????????????????????? #
-                if ind >= len(detections) - len(ifpGT):
+                if keep_inds[ind] >= len_oriDetections:
+                # if ind >= len(detections) - len(ifpGT):
                     if category >= 0:
                         draw_gaussian(tl_valids[b_ind, category], [xtl, ytl], radius)
                     else:

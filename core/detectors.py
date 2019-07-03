@@ -91,4 +91,4 @@ class CornerNet_ifp_Saccade(Base):
         coco = COCO(cfg_db)
 
         cornernet = load_nnet(sys_cfg, model())
-        super(CornerNet_Saccade, self).__init__(coco, cornernet, cornernet_ifp_saccade_inference, model=model_path)
+        super(CornerNet_ifp_Saccade, self).__init__(coco, cornernet, cornernet_ifp_saccade_inference, model=model_path)
