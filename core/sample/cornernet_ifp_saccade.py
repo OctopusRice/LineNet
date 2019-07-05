@@ -326,7 +326,6 @@ def cornernet_ifp_saccade(system_configs, db, k_ind, data_aug, debug):
 
             if overlap and valid:
                 if keep_inds[ind] >= len_oriDetections:
-                # if ind >= len(detections) - len(ifpGT):
                     if category >= 0:
                         draw_gaussian(tl_heats[b_ind, category], [xtl, ytl], radius)
                     else:
@@ -337,7 +336,6 @@ def cornernet_ifp_saccade(system_configs, db, k_ind, data_aug, debug):
                     draw_gaussian(br_heats[b_ind, category], [xbr, ybr], radius)
 
                 if keep_inds[ind] < len_oriDetections:
-                # if ind < len(detections) - len(ifpGT):
                     tag_ind = tag_lens[b_ind]
                     tl_regrs[b_ind, tag_ind, :] = [fxtl - xtl, fytl - ytl]
                     br_regrs[b_ind, tag_ind, :] = [fxbr - xbr, fybr - ybr]
@@ -352,27 +350,23 @@ def cornernet_ifp_saccade(system_configs, db, k_ind, data_aug, debug):
                     continue
 
                 if keep_inds[ind] < len_oriDetections or category >= 0:
-                # if ind < len(detections) - len(ifpGT) or category >= 0:
                     tl_regrs[b_ind, tl_off_ind, :] = [fxtl - xtl, fytl - ytl]
                     tl_off_tags[b_ind, tl_off_ind] = ytl * output_size[1] + xtl
                     tl_off_lens[b_ind] += 1
 
                 if keep_inds[ind] < len_oriDetections or category < 0:
-                # if ind < len(detections) - len(ifpGT) or category < 0:
                     br_regrs[b_ind, br_off_ind, :] = [fxbr - xbr, fybr - ybr]
                     br_off_tags[b_ind, br_off_ind] = ybr * output_size[1] + xbr
                     br_off_lens[b_ind] += 1
 
-            if config_debug.visualize_sampleFile:
-                t = np.zeros((output_size[0], output_size[1]), dtype=np.float32)
-                for category in range(0, categories):
-                    t += tl_heats[b_ind, category]
-                cv2.imwrite('ifp_lines_Added_img' + str(b_ind) + '.jpg', image3)
-                cv2.imwrite('ifp_lines_Added_gt' + str(b_ind) + '.jpg', t * 256)
+                if config_debug.visualize_sampleFile:
+                    t = np.zeros((output_size[0], output_size[1]), dtype=np.float32)
+                    for category in range(0, categories):
+                        t += tl_heats[b_ind, category]
+                    cv2.imwrite('ifp_lines_Added_img' + str(b_ind) + '.jpg', image3)
+                    cv2.imwrite('ifp_lines_Added_gt' + str(b_ind) + '.jpg', t * 256)
             else:
-                # ??????????????????????? #
                 if keep_inds[ind] >= len_oriDetections:
-                # if ind >= len(detections) - len(ifpGT):
                     if category >= 0:
                         draw_gaussian(tl_valids[b_ind, category], [xtl, ytl], radius)
                     else:
