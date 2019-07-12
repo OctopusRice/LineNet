@@ -86,16 +86,16 @@ def batch_decode(db, nnet, images, no_att=False):
             b_attentions = [b_attention.data.cpu().numpy() for b_attention in b_attentions]
             tmp = b_outputs[2]
 
-        for idx in range(0, tmp.size(0)):
-            pred = tmp[idx].sum(0)
-            pred = pred.data.cpu().numpy()
-            threshold = 50
-            pred_inds = (pred > threshold)
-            pred_inds2 = (pred <= threshold)
-            pred[pred_inds] = 255
-            pred[pred_inds2] = 0
-
-            cv2.imwrite('pred' + str(idx) + ".jpg", pred)
+        # for idx in range(0, tmp.size(0)):
+        #     pred = tmp[idx].sum(0)
+        #     pred = pred.data.cpu().numpy()
+        #     threshold = 50
+        #     pred_inds = (pred > threshold)
+        #     pred_inds2 = (pred <= threshold)
+        #     pred[pred_inds] = 255
+        #     pred[pred_inds2] = 0
+        #
+        #     cv2.imwrite('pred' + str(idx) + ".jpg", pred)
 
         b_detections = b_detections.data.cpu().numpy()
 
