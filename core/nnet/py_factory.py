@@ -5,6 +5,7 @@ import importlib
 import torch.nn as nn
 
 from ..models.py_utils.data_parallel import DataParallel
+import config_debug
 
 torch.manual_seed(317)
 
@@ -121,6 +122,12 @@ class NetworkFactory(object):
         with open(pretrained_model, "rb") as f:
             params = torch.load(f)
             self.model.load_state_dict(params)
+
+            if config_debug.validation:
+                for name, param in self.model.named_parameters():
+                    if name[7:17] != 'tl_modules' and name[7:17] != 'br_modules' and \
+                        name[7:14] != 'tl_offs' and name[7:14] != 'br_offs':
+                        param.requires_grad = False
 
     def load_params(self, iteration):
         cache_file = self.system_config.snapshot_file.format(iteration)

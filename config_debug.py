@@ -1,5 +1,6 @@
 visualize_jh = False
-visualize_sampleFile = False
+visualize_sampleFile = True
+validation = True
 
 is_ifpGT = True
 is_lineGT = False

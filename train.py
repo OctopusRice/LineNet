@@ -108,6 +108,12 @@ def train(training_dbs, validation_db, system_config, model, args):
     decay_rate       = system_config.decay_rate
     stepsize         = system_config.stepsize
 
+    if config_debug.validation:
+        pretrained_model = "./cache/nnet/CornerNet_Saccade/CornerNet_Saccade_500000_ori.pkl"
+        # start_iter = 500000
+        max_iteration = 100000
+        stepsize = 100000
+
     print("Process {}: building model...".format(rank))
     nnet = NetworkFactory(system_config, model, distributed=distributed, gpu=gpu)
     if initialize:
