@@ -2,6 +2,7 @@ import cv2
 import math
 import torch
 import numpy as np
+import threading
 
 from .utils import draw_gaussian, gaussian_radius, normalize_, color_jittering_, lighting_, crop_image
 import config_debug
@@ -160,7 +161,7 @@ def cornernet_ifp_saccade(system_configs, db, k_ind, data_aug, debug):
 
     db_size = db.db_inds.size
     for b_ind in range(batch_size):
-        if not debug and k_ind == 0:
+        if not debug and not config_debug.visualize_sampleFile and k_ind == 0:
         # if k_ind == 0:
             db.shuffle_inds()
 
@@ -171,71 +172,18 @@ def cornernet_ifp_saccade(system_configs, db, k_ind, data_aug, debug):
         image      = cv2.imread(image_path)
 
         orig_detections = db.detections(db_ind)
-
-        # Add inevitable false positive Ground Truth
-        if config_debug.visualize_sampleFile:
-            image2 = cv2.imread(image_path)
-            for i_detection in orig_detections:
-                cv2.rectangle(image2, (i_detection[0].astype(np.int64),i_detection[1].astype(np.int64)), (i_detection[2].astype(np.int64), i_detection[3].astype(np.int64)), (255,0,0), 3)
-
-        ifpGT = []
-        for i in range(0, len(orig_detections)):
-            i_detection = orig_detections[i]
-            i_width, i_height = i_detection[2] - i_detection[0], i_detection[3] - i_detection[1]
-            for j in range(i + 1, len(orig_detections)):
-                j_detection = orig_detections[j]
-                # ifp for only same category
-                if i_detection[4] != j_detection[4]: continue
-
-                # TL inevitable false positive ground truth
-                j_width, j_height = j_detection[2] - j_detection[0], j_detection[3] - j_detection[1]
-                if i_width * i_height > j_width * j_height:
-                    w = i_width
-                    h = i_width
-                else:
-                    w = j_width
-                    h = j_height
-
-                if i_detection[0] < j_detection[0] and i_detection[1] > j_detection[1]:
-                    ifpGT.append([i_detection[0],
-                                  j_detection[1],
-                                  i_detection[0] + w,
-                                  j_detection[1] + h,
-                                  i_detection[4]])
-                elif i_detection[0] > j_detection[0] and i_detection[1] < j_detection[1]:
-                    ifpGT.append([j_detection[0],
-                                  i_detection[1],
-                                  j_detection[0] + w,
-                                  i_detection[1] + h,
-                                  i_detection[4]])
-
-                # BR inevitable false positive ground truth
-                if i_detection[2] < j_detection[2] and i_detection[3] > j_detection[3]:
-                    ifpGT.append([j_detection[2] - w,
-                                  i_detection[3] - h,
-                                  j_detection[2],
-                                  i_detection[3],
-                                  -i_detection[4]])
-                elif i_detection[2] > j_detection[2] and i_detection[3] < j_detection[3]:
-                    ifpGT.append([i_detection[2] - w,
-                                  j_detection[3] - h,
-                                  i_detection[2],
-                                  j_detection[3],
-                                  -i_detection[4]])
-
-        len_oriDetections = len(orig_detections)
-        if len(ifpGT) > 0:
-            orig_detections = np.concatenate((orig_detections, ifpGT), axis=0)
-
-        if config_debug.visualize_sampleFile:
-            for ifp in ifpGT:
-                if ifp[4] >= 0:
-                    cv2.circle(image2, (ifp[0].astype(np.int64), ifp[1].astype(np.int64)), 5, (255, 0, 0), 3)
-                else:
-                    cv2.circle(image2, (ifp[2].astype(np.int64), ifp[3].astype(np.int64)), 5, (0, 0, 255), 3)
-            cv2.imwrite('ifp_Added' + str(b_ind) + '.jpg', image2)
-
         keep_inds       = np.arange(orig_detections.shape[0])
+
+        if config_debug.visualize_sampleFile:
+            image2 = image.copy()
+            cv2.imwrite(
+                './sampleFile/oriImage' + str(b_ind) + '.jpg', image2)
+            for i_detection in orig_detections:
+                cv2.rectangle(image2, (i_detection[0].astype(np.int64), i_detection[1].astype(np.int64)),
+                              (i_detection[2].astype(np.int64), i_detection[3].astype(np.int64)), (0, 255, 0), 1)
+            cv2.imwrite(
+                './sampleFile/oriImage_detect' + str(b_ind) + '.jpg', image2)
+
 
         # clip the detections
         detections = orig_detections.copy()
@@ -254,6 +202,74 @@ def cornernet_ifp_saccade(system_configs, db, k_ind, data_aug, debug):
 
         image, detections, border = crop_image_dets(image, detections, ref_ind, input_size, rand_center=rand_center)
 
+        # Add inevitable false positive Ground Truth
+        if config_debug.visualize_sampleFile:
+            # image2 = cv2.imread(image_path)
+            image2 = image.copy()
+            cv2.imwrite(
+                './sampleFile/cropImage' + str(b_ind) + '.jpg', image2)
+            for i_detection in detections:
+                cv2.rectangle(image2, (i_detection[0].astype(np.int64), i_detection[1].astype(np.int64)),
+                              (i_detection[2].astype(np.int64), i_detection[3].astype(np.int64)), (0, 255, 0), 1)
+            cv2.imwrite(
+                './sampleFile/cropImage_detect' + str(b_ind) + '.jpg', image2)
+
+        ifpGT = []
+        for i in range(0, len(detections)):
+            i_detection = detections[i]
+            i_width, i_height = i_detection[2] - i_detection[0], i_detection[3] - i_detection[1]
+            for j in range(i + 1, len(detections)):
+                j_detection = detections[j]
+
+                # ifp for only same category
+                if i_detection[4] != j_detection[4]: continue
+
+                # TL inevitable false positive ground truth
+                j_width, j_height = j_detection[2] - j_detection[0], j_detection[3] - j_detection[1]
+                if i_width * i_height > j_width * j_height:
+                    w = i_width
+                    h = i_height
+                else:
+                    w = j_width
+                    h = j_height
+
+                if all(i_detection[0:2] > 0) and all(j_detection[0:2] > 0) and \
+                        i_detection[0] < image.shape[1] and i_detection[1] < image.shape[0] and \
+                        j_detection[0] < image.shape[1] and j_detection[1] < image.shape[0]:
+                    if i_detection[0] < j_detection[0] and i_detection[1] > j_detection[1]:
+                        ifpGT.append([i_detection[0],
+                                      j_detection[1],
+                                      i_detection[0] + w,
+                                      j_detection[1] + h,
+                                      i_detection[4]])
+                    elif i_detection[0] > j_detection[0] and i_detection[1] < j_detection[1]:
+                        ifpGT.append([j_detection[0],
+                                      i_detection[1],
+                                      j_detection[0] + w,
+                                      i_detection[1] + h,
+                                      i_detection[4]])
+
+                # BR inevitable false positive ground truth
+                if all(i_detection[2:4] > 0) and all(j_detection[2:4] > 0) and \
+                        i_detection[2] < image.shape[1] and i_detection[3] < image.shape[0] and \
+                        j_detection[2] < image.shape[1] and j_detection[3] < image.shape[0]:
+                    if i_detection[2] < j_detection[2] and i_detection[3] > j_detection[3]:
+                        ifpGT.append([j_detection[2] - w,
+                                      i_detection[3] - h,
+                                      j_detection[2],
+                                      i_detection[3],
+                                      -i_detection[4]])
+                    elif i_detection[2] > j_detection[2] and i_detection[3] < j_detection[3]:
+                        ifpGT.append([i_detection[2] - w,
+                                      j_detection[3] - h,
+                                      i_detection[2],
+                                      j_detection[3],
+                                      -i_detection[4]])
+
+        len_Detections = len(detections)
+
+        # End of Adding IFP
+
         detections, clip_inds = clip_detections(border, detections)
         keep_inds = keep_inds[clip_inds]
 
@@ -261,7 +277,7 @@ def cornernet_ifp_saccade(system_configs, db, k_ind, data_aug, debug):
         height_ratio = output_size[0] / input_size[0]
 
         # flipping an image randomly
-        if not debug and np.random.uniform() > 0.5:
+        if not debug and not config_debug.visualize_sampleFile and np.random.uniform() > 0.5:
             image[:] = image[:, ::-1, :]
             width    = image.shape[1]
             detections[:, [0, 2]] = width - detections[:, [2, 0]] - 1
@@ -278,7 +294,23 @@ def cornernet_ifp_saccade(system_configs, db, k_ind, data_aug, debug):
             cv2.imwrite('debug/{:03d}.jpg'.format(b_ind), dimage)
         overlaps = bbox_overlaps(detections, orig_detections[keep_inds]) > 0.5
 
-        if not debug:
+        # Add ifp to variable
+        if len(ifpGT) > 0:
+            detections = np.concatenate((detections, ifpGT), axis=0)
+
+        if config_debug.visualize_sampleFile:
+            for ifp in ifpGT:
+                if ifp[4] >= 0:
+                    cv2.circle(image2, (ifp[0].astype(np.int64), ifp[1].astype(np.int64)), 5, (255, 0, 0), 3)
+                else:
+                    cv2.circle(image2, (ifp[2].astype(np.int64), ifp[3].astype(np.int64)), 5, (0, 0, 255), 3)
+            cv2.imwrite('sampleFile/ifp_Added' + str(b_ind) + '.jpg', image2)
+        for i in range(len(ifpGT)):
+            keep_inds = np.append(keep_inds, max(len_Detections, keep_inds[-1] + 1))
+            overlaps = np.append(overlaps, True)
+        # End
+
+        if not debug and not config_debug.visualize_sampleFile:
             image = image.astype(np.float32) / 255.
             color_jittering_(data_rng, image)
             lighting_(data_rng, image, 0.1, db.eig_val, db.eig_vec)
@@ -325,7 +357,7 @@ def cornernet_ifp_saccade(system_configs, db, k_ind, data_aug, debug):
                 radius = gaussian_rad
 
             if overlap and valid:
-                if keep_inds[ind] >= len_oriDetections:
+                if keep_inds[ind] >= len_Detections:
                     if category >= 0:
                         draw_gaussian(tl_heats[b_ind, category], [xtl, ytl], radius)
                     else:
@@ -335,7 +367,7 @@ def cornernet_ifp_saccade(system_configs, db, k_ind, data_aug, debug):
                     draw_gaussian(tl_heats[b_ind, category], [xtl, ytl], radius)
                     draw_gaussian(br_heats[b_ind, category], [xbr, ybr], radius)
 
-                if keep_inds[ind] < len_oriDetections:
+                if keep_inds[ind] < len_Detections:
                     tag_ind = tag_lens[b_ind]
                     tl_regrs[b_ind, tag_ind, :] = [fxtl - xtl, fytl - ytl]
                     br_regrs[b_ind, tag_ind, :] = [fxbr - xbr, fybr - ybr]
@@ -349,12 +381,12 @@ def cornernet_ifp_saccade(system_configs, db, k_ind, data_aug, debug):
                         f.write(str(image_path) + ' ' + str(db_ind))
                     continue
 
-                if keep_inds[ind] < len_oriDetections or category >= 0:
+                if keep_inds[ind] < len_Detections or category >= 0:
                     tl_regrs[b_ind, tl_off_ind, :] = [fxtl - xtl, fytl - ytl]
                     tl_off_tags[b_ind, tl_off_ind] = ytl * output_size[1] + xtl
                     tl_off_lens[b_ind] += 1
 
-                if keep_inds[ind] < len_oriDetections or category < 0:
+                if keep_inds[ind] < len_Detections or category < 0:
                     br_regrs[b_ind, br_off_ind, :] = [fxbr - xbr, fybr - ybr]
                     br_off_tags[b_ind, br_off_ind] = ybr * output_size[1] + xbr
                     br_off_lens[b_ind] += 1
@@ -363,10 +395,10 @@ def cornernet_ifp_saccade(system_configs, db, k_ind, data_aug, debug):
                     t = np.zeros((output_size[0], output_size[1]), dtype=np.float32)
                     for category in range(0, categories):
                         t += tl_heats[b_ind, category]
-                    cv2.imwrite('ifp_lines_Added_img' + str(b_ind) + '.jpg', image3)
-                    cv2.imwrite('ifp_lines_Added_gt' + str(b_ind) + '.jpg', t * 256)
+                    cv2.imwrite('sampleFile/ifp_lines_Added_img' + str(b_ind) + '.jpg', image3)
+                    cv2.imwrite('sampleFile/ifp_lines_Added_gt' + str(b_ind) + '.jpg', t * 256)
             else:
-                if keep_inds[ind] >= len_oriDetections:
+                if keep_inds[ind] >= len_Detections:
                     if category >= 0:
                         draw_gaussian(tl_valids[b_ind, category], [xtl, ytl], radius)
                     else:
@@ -375,9 +407,6 @@ def cornernet_ifp_saccade(system_configs, db, k_ind, data_aug, debug):
                 else:
                     draw_gaussian(tl_valids[b_ind, category], [xtl, ytl], radius)
                     draw_gaussian(br_valids[b_ind, category], [xbr, ybr], radius)
-
-    if config_debug.visualize_sampleFile:
-        exit()
 
     tl_valids = (tl_valids == 0).astype(np.float32)
     br_valids = (br_valids == 0).astype(np.float32)
@@ -389,6 +418,44 @@ def cornernet_ifp_saccade(system_configs, db, k_ind, data_aug, debug):
         tag_masks[b_ind, :tag_len] = 1
         tl_off_masks[b_ind, :off_tl_len] = 1
         br_off_masks[b_ind, :off_br_len] = 1
+
+    if config_debug.visualize_sampleFile:
+        moduleName = ['tl_heats', 'tl_valids', 'attentions']
+        moduleIdx = 0
+
+        img = images[0].transpose((1, 2, 0))
+        cv2.imwrite(
+            './sampleFile/detail/croppedImage.jpg', img)
+        img = images[1].transpose((1, 2, 0))
+        cv2.imwrite(
+            './sampleFile/detail/croppedImage2.jpg', img)
+
+        for idx in range(0, 80):
+            pred = tl_heats[0][idx]
+            pred = pred * 256
+            cv2.imwrite(
+                './sampleFile/detail/' + moduleName[moduleIdx] + '/' + moduleName[
+                    moduleIdx] + '_' + str(idx) + ".jpg", pred)
+        moduleIdx += 1
+
+        for idx in range(0, 80):
+            pred = tl_valids[0][idx]
+            pred = pred * 256
+            cv2.imwrite(
+                './sampleFile/detail/' + moduleName[moduleIdx] + '/' + str(idx) + moduleName[
+                    moduleIdx] + '_' + str(idx) + ".jpg", pred)
+        moduleIdx += 1
+
+        for idx in range(0, 3):
+            pred = attentions[idx][0]
+            pred = pred.transpose((1, 2, 0))
+            pred = pred * 256
+
+            cv2.imwrite(
+                './sampleFile/detail/' + moduleName[moduleIdx] + '/' + moduleName[
+                    moduleIdx] + '_' + str(idx) + ".jpg", pred)
+        moduleIdx += 1
+        exit()
 
     images     = torch.from_numpy(images)
     tl_heats   = torch.from_numpy(tl_heats)

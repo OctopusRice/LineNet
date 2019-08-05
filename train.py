@@ -109,7 +109,7 @@ def train(training_dbs, validation_db, system_config, model, args):
     stepsize         = system_config.stepsize
 
     if config_debug.validation:
-        pretrained_model = "./cache/nnet/CornerNet_Saccade/CornerNet_Saccade_500000_ori.pkl"
+        pretrained_model = "./cache/nnet/CornerNet_Saccade/CornerNet_Saccade_500000.pkl"
         # start_iter = 500000
         max_iteration = 100000
         stepsize = 100000
