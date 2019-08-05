@@ -40,7 +40,7 @@ def crop_image_gpu(image, center, size, out_image):
 
 def remap_dets_(detections, scales, offsets):
     xs, ys = detections[..., 0:4:2], detections[..., 1:4:2]
- 
+
     xs /= scales.reshape(-1, 1, 1)
     ys /= scales.reshape(-1, 1, 1)
     xs += offsets[:, 1][:, None, None]
@@ -64,7 +64,7 @@ def batch_decode(db, nnet, images, no_att=False):
 
     num_images = images.shape[0]
     detections = []
-    attentions = [[] for _ in range(len(att_ranges))]   
+    attentions = [[] for _ in range(len(att_ranges))]
 
     batch_size = 32
     for b_ind in range(math.ceil(num_images / batch_size)):
@@ -77,25 +77,12 @@ def batch_decode(db, nnet, images, no_att=False):
                 test=True, num_dets=num_dets, no_border=True, no_att=no_att
         )
         if no_att:
-            b_detections = b_outputs[0]
-            tmp = b_outputs[1]
+            b_detections = b_outputs
         else:
             b_detections = b_outputs[0]
             b_attentions = b_outputs[1]
             b_attentions = att_nms(b_attentions, att_nms_ks)
             b_attentions = [b_attention.data.cpu().numpy() for b_attention in b_attentions]
-            tmp = b_outputs[2]
-
-        # for idx in range(0, tmp.size(0)):
-        #     pred = tmp[idx].sum(0)
-        #     pred = pred.data.cpu().numpy()
-        #     threshold = 50
-        #     pred_inds = (pred > threshold)
-        #     pred_inds2 = (pred <= threshold)
-        #     pred[pred_inds] = 255
-        #     pred[pred_inds2] = 0
-        #
-        #     cv2.imwrite('pred' + str(idx) + ".jpg", pred)
 
         b_detections = b_detections.data.cpu().numpy()
 
@@ -315,7 +302,7 @@ def cornernet_ifp_saccade_inference(db, nnet, image, decode_func=batch_decode):
     max_per_image = db.configs["max_per_image"]
     nms_algorithm = {
         "nms": 0,
-        "linear_soft_nms": 1, 
+        "linear_soft_nms": 1,
         "exp_soft_nms": 2
     }[db.configs["nms_algorithm"]]
 
@@ -332,8 +319,8 @@ def cornernet_ifp_saccade_inference(db, nnet, image, decode_func=batch_decode):
     image = torch.from_numpy(image).cuda(non_blocking=True)
 
     dets, locations, atts = get_locs(
-        db, nnet, image, im_mean, im_std, 
-        att_scales[0], att_thresholds[0], 
+        db, nnet, image, im_mean, im_std,
+        att_scales[0], att_thresholds[0],
         init_sizes, ref_dets=ref_dets
     )
 
