@@ -267,7 +267,6 @@ def cornernet_ifp_saccade(system_configs, db, k_ind, data_aug, debug):
                                       -i_detection[4]])
 
         len_Detections = len(detections)
-
         # End of Adding IFP
 
         detections, clip_inds = clip_detections(border, detections)
@@ -277,10 +276,12 @@ def cornernet_ifp_saccade(system_configs, db, k_ind, data_aug, debug):
         height_ratio = output_size[0] / input_size[0]
 
         # flipping an image randomly
+        isFlipped = False
         if not debug and not config_debug.visualize_sampleFile and np.random.uniform() > 0.5:
             image[:] = image[:, ::-1, :]
             width    = image.shape[1]
             detections[:, [0, 2]] = width - detections[:, [2, 0]] - 1
+            isFlipped = True
         create_attention_mask([att[b_ind, 0] for att in attentions], att_ratios, att_ranges, detections)
 
         if debug:
@@ -296,6 +297,9 @@ def cornernet_ifp_saccade(system_configs, db, k_ind, data_aug, debug):
 
         # Add ifp to variable
         if len(ifpGT) > 0:
+            if isFlipped:
+                width = image.shape[1]
+                ifpGT[:, [0, 2]] = width - ifpGT[:, [2, 0]] - 1
             detections = np.concatenate((detections, ifpGT), axis=0)
 
         if config_debug.visualize_sampleFile:
