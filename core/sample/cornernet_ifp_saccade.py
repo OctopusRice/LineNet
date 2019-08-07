@@ -202,7 +202,7 @@ def cornernet_ifp_saccade(system_configs, db, k_ind, data_aug, debug):
 
         image, detections, border = crop_image_dets(image, detections, ref_ind, input_size, rand_center=rand_center)
 
-        # Add inevitable false positive Ground Truth
+        # Detecting inevitable false positive Ground Truth
         if config_debug.visualize_sampleFile:
             # image2 = cv2.imread(image_path)
             image2 = image.copy()
@@ -215,6 +215,7 @@ def cornernet_ifp_saccade(system_configs, db, k_ind, data_aug, debug):
                 './sampleFile/cropImage_detect' + str(b_ind) + '.jpg', image2)
 
         ifpGT = []
+        ifpGT_flipped = []
         for i in range(0, len(detections)):
             i_detection = detections[i]
             i_width, i_height = i_detection[2] - i_detection[0], i_detection[3] - i_detection[1]
@@ -249,6 +250,22 @@ def cornernet_ifp_saccade(system_configs, db, k_ind, data_aug, debug):
                                       i_detection[1] + h,
                                       i_detection[4]])
 
+                if i_detection[2] > 0 and i_detection[1] > 0 and j_detection[2] > 0 and j_detection[1] > 0 and \
+                            i_detection[2] < image.shape[1] and i_detection[1] < image.shape[0] and \
+                            j_detection[2] < image.shape[1] and j_detection[1] < image.shape[0]:
+                    if i_detection[2] < j_detection[2] and i_detection[1] < j_detection[1]:
+                        ifpGT_flipped.append([j_detection[2],
+                                      i_detection[1],
+                                      j_detection[2] - w,
+                                      i_detection[1] + h,
+                                      i_detection[4]])
+                    elif i_detection[2] > j_detection[2] and i_detection[1] > j_detection[1]:
+                        ifpGT_flipped.append([i_detection[2],
+                                          j_detection[1],
+                                          i_detection[2] - w,
+                                          j_detection[1] + h,
+                                          i_detection[4]])
+
                 # BR inevitable false positive ground truth
                 if all(i_detection[2:4] > 0) and all(j_detection[2:4] > 0) and \
                         i_detection[2] < image.shape[1] and i_detection[3] < image.shape[0] and \
@@ -266,8 +283,24 @@ def cornernet_ifp_saccade(system_configs, db, k_ind, data_aug, debug):
                                       j_detection[3],
                                       -i_detection[4]])
 
+                if i_detection[0] > 0 and i_detection[3] > 0 and j_detection[0] > 0 and j_detection[3] > 0 and \
+                            i_detection[0] < image.shape[1] and i_detection[3] < image.shape[0] and \
+                            j_detection[0] < image.shape[1] and j_detection[3] < image.shape[0]:
+                    if i_detection[0] < j_detection[0] and i_detection[3] < j_detection[3]:
+                        ifpGT_flipped.append([i_detection[0] + w,
+                                      j_detection[3] - h,
+                                      i_detection[0],
+                                      j_detection[3],
+                                      -i_detection[4]])
+                    elif i_detection[0] > j_detection[0] and i_detection[3] > j_detection[3]:
+                        ifpGT_flipped.append([j_detection[0] + w,
+                                      i_detection[3] - h,
+                                      j_detection[0],
+                                      i_detection[3],
+                                      -i_detection[4]])
+
         len_Detections = len(detections)
-        # End of Adding IFP
+        # End of detecting IFP
 
         detections, clip_inds = clip_detections(border, detections)
         keep_inds = keep_inds[clip_inds]
@@ -277,7 +310,7 @@ def cornernet_ifp_saccade(system_configs, db, k_ind, data_aug, debug):
 
         # flipping an image randomly
         isFlipped = False
-        if not debug and not config_debug.visualize_sampleFile and np.random.uniform() > 0.5:
+        if not debug and not config_debug.visualize_sampleFile: #and np.random.uniform() > 0.5:
             image[:] = image[:, ::-1, :]
             width    = image.shape[1]
             detections[:, [0, 2]] = width - detections[:, [2, 0]] - 1
@@ -296,10 +329,13 @@ def cornernet_ifp_saccade(system_configs, db, k_ind, data_aug, debug):
         overlaps = bbox_overlaps(detections, orig_detections[keep_inds]) > 0.5
 
         # Add ifp to variable
+        if isFlipped:
+            ifpGT_flipped = np.array(ifpGT_flipped)
+            if len(ifpGT_flipped) > 0:
+                ifpGT_flipped[:, [0, 2]] = width - ifpGT_flipped[:, [0, 2]] - 1
+            ifpGT = ifpGT_flipped
+
         if len(ifpGT) > 0:
-            if isFlipped:
-                width = image.shape[1]
-                ifpGT[:, [0, 2]] = width - ifpGT[:, [2, 0]] - 1
             detections = np.concatenate((detections, ifpGT), axis=0)
 
         if config_debug.visualize_sampleFile:
