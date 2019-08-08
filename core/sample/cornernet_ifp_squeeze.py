@@ -204,7 +204,7 @@ def cornernet_ifp_squeeze(system_configs, db, k_ind, data_aug, debug):
 
         # flipping an image randomly
         isFlipped = False
-        if not debug:# and not config_debug.visualize_sampleFile and np.random.uniform() > 0.5:
+        if not debug and not config_debug.visualize_sampleFile and np.random.uniform() > 0.5:
             image[:] = image[:, ::-1, :]
             width    = image.shape[1]
             detections[:, [0, 2]] = width - detections[:, [2, 0]] - 1
