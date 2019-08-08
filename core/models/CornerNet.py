@@ -50,8 +50,6 @@ class model(hg_net):
 
         tl_modules = nn.ModuleList([corner_pool(256, TopPool, LeftPool) for _ in range(stacks)])
         br_modules = nn.ModuleList([corner_pool(256, BottomPool, RightPool) for _ in range(stacks)])
-        # tl_modules = nn.ModuleList([corner_pool(256, TopPool, LeftPool) for _ in range(stacks)])
-        # br_modules = nn.ModuleList([corner_pool(256, BottomPool, RightPool) for _ in range(stacks)])
 
         tl_heats = nn.ModuleList([self._pred_mod(80) for _ in range(stacks)])
         br_heats = nn.ModuleList([self._pred_mod(80) for _ in range(stacks)])
