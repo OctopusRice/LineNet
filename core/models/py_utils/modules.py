@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import config_debug
 
+import cv2
+
 from .utils import residual, upsample, merge, _decode, _decode_line
 
 def _make_layer(inp_dim, out_dim, modules):
@@ -128,6 +130,7 @@ class hg_net(nn.Module):
         br_tags    = [br_tag_(br_mod)  for br_tag_,  br_mod in zip(self.br_tags,  br_modules)]
         tl_offs    = [tl_off_(tl_mod)  for tl_off_,  tl_mod in zip(self.tl_offs,  tl_modules)]
         br_offs    = [br_off_(br_mod)  for br_off_,  br_mod in zip(self.br_offs,  br_modules)]
+
         return [tl_heats, br_heats, tl_tags, br_tags, tl_offs, br_offs]
 
     def _test(self, *xs, **kwargs):
@@ -453,9 +456,9 @@ class saccade_net(nn.Module):
 
         outs = [tl_heat, br_heat, tl_tag, br_tag, tl_off, br_off]
         if not no_att:
-            return self._decode(*outs, **kwargs), atts, cnvs[-1]
+            return self._decode(*outs, **kwargs), atts
         else:
-            return self._decode(*outs, **kwargs), cnvs[-1]
+            return self._decode(*outs, **kwargs)
 
     def forward(self, *xs, test=False, **kwargs):
         if not test:

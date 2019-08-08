@@ -60,6 +60,7 @@ def draw_gaussian(heatmap, center, radius, k=1):
 
     masked_heatmap  = heatmap[y - top:y + bottom, x - left:x + right]
     masked_gaussian = gaussian[radius - top:radius + bottom, radius - left:radius + right]
+
     np.maximum(masked_heatmap, masked_gaussian * k, out=masked_heatmap)
 
 

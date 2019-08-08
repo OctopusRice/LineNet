@@ -386,7 +386,6 @@ class CornerNet_Loss(nn.Module):
 
         gt_tl_heat = targets[0]
         gt_br_heat = targets[1]
-        # modified by JH_190609
         gt_tag_mask = targets[2]
         gt_off_tl_mask = targets[3]
         gt_off_br_mask = targets[4]
@@ -396,7 +395,6 @@ class CornerNet_Loss(nn.Module):
         gt_br_tag_ind = targets[8]
         gt_tl_off_ind = targets[9]
         gt_br_off_ind = targets[10]
-        #######################
 
         # focal loss
         focal_loss = 0

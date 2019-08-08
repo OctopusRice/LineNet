@@ -119,15 +119,26 @@ class NetworkFactory(object):
 
     def load_pretrained_params(self, pretrained_model):
         print("loading from {}".format(pretrained_model))
+
+        names = []
         with open(pretrained_model, "rb") as f:
             params = torch.load(f)
             self.model.load_state_dict(params)
 
             if config_debug.validation:
                 for name, param in self.model.named_parameters():
+                    names.append(name)
                     if name[7:17] != 'tl_modules' and name[7:17] != 'br_modules' and \
-                        name[7:14] != 'tl_offs' and name[7:14] != 'br_offs':
+                       name[7:15] != 'tl_heats'   and name[7:15] != 'br_heats'   and \
+                       name[7:14] != 'tl_offs'    and name[7:14] != 'br_offs':
                         param.requires_grad = False
+
+        if config_debug.validation:
+            with open("./" + config_debug.cfg_file + "_module_names.txt", "w") as f:
+                for listitem in names:
+                    f.write('%s\n' % listitem)
+
+
 
     def load_params(self, iteration):
         cache_file = self.system_config.snapshot_file.format(iteration)

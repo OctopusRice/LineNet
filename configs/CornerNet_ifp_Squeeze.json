@@ -2,7 +2,7 @@
     "system": {
         "dataset": "COCO",
         "batch_size": 13,
-        "sampling_function": "cornernet",
+        "sampling_function": "cornernet_ifp_squeeze",
 
         "train_split": "trainval",
         "val_split": "minival",
