@@ -92,3 +92,18 @@ class CornerNet_ifp_Saccade(Base):
 
         cornernet = load_nnet(sys_cfg, model())
         super(CornerNet_ifp_Saccade, self).__init__(coco, cornernet, cornernet_ifp_saccade_inference, model=model_path)
+
+class CornerNet_ifp_Squeeze(Base):
+    def __init__(self):
+        from .test.cornernet import cornernet_inference
+        from .models.CornerNet_ifp_Squeeze import model
+
+        cfg_path = get_file_path("..", "configs", "CornerNet_ifp_Squeeze.json")
+        model_path = get_file_path("..", "cache", "nnet", "CornerNet_ifp_Squeeze", "CornerNet_ifp_Squeeze_5000.pkl")
+
+        cfg_sys, cfg_db = load_cfg(cfg_path)
+        sys_cfg = SystemConfig().update_config(cfg_sys)
+        coco = COCO(cfg_db)
+
+        cornernet = load_nnet(sys_cfg, model())
+        super(CornerNet_ifp_Squeeze, self).__init__(coco, cornernet, cornernet_inference, model=model_path)
