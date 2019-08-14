@@ -365,9 +365,9 @@ class LineNet_Loss(nn.Module):
         loss = (focal_loss + pull_loss + push_loss + off_loss) / max(len(t_heats), 1)
         return loss.unsqueeze(0)
 
-class CornerNet_Loss(nn.Module):
+class CornerNet_ifp_Loss(nn.Module):
     def __init__(self, pull_weight=1, push_weight=1, off_weight=1, focal_loss=_focal_loss):
-        super(CornerNet_Loss, self).__init__()
+        super(CornerNet_ifp_Loss, self).__init__()
 
         self.pull_weight = pull_weight
         self.push_weight = push_weight
@@ -423,6 +423,65 @@ class CornerNet_Loss(nn.Module):
         for tl_off, br_off in zip(tl_offs, br_offs):
             off_loss += self.off_loss(tl_off, gt_tl_off, gt_off_tl_mask)  # modified by JH_190609
             off_loss += self.off_loss(br_off, gt_br_off, gt_off_br_mask)  # modified by JH_190609
+        off_loss = self.off_weight * off_loss
+
+        loss = (focal_loss + pull_loss + push_loss + off_loss) / max(len(tl_heats), 1)
+        return loss.unsqueeze(0)
+
+class CornerNet_Loss(nn.Module):
+    def __init__(self, pull_weight=1, push_weight=1, off_weight=1, focal_loss=_focal_loss):
+        super(CornerNet_Loss, self).__init__()
+
+        self.pull_weight = pull_weight
+        self.push_weight = push_weight
+        self.off_weight  = off_weight
+        self.focal_loss  = focal_loss
+        self.ae_loss     = _ae_loss
+        self.off_loss    = _off_loss
+
+    def forward(self, outs, targets):
+        tl_heats = outs[0]
+        br_heats = outs[1]
+        tl_tags  = outs[2]
+        br_tags  = outs[3]
+        tl_offs  = outs[4]
+        br_offs  = outs[5]
+
+        gt_tl_heat  = targets[0]
+        gt_br_heat  = targets[1]
+        gt_mask     = targets[2]
+        gt_tl_off   = targets[3]
+        gt_br_off   = targets[4]
+        gt_tl_ind   = targets[5]
+        gt_br_ind   = targets[6]
+
+        # focal loss
+        focal_loss = 0
+
+        tl_heats = [_sigmoid(t) for t in tl_heats]
+        br_heats = [_sigmoid(b) for b in br_heats]
+
+        focal_loss += self.focal_loss(tl_heats, gt_tl_heat)
+        focal_loss += self.focal_loss(br_heats, gt_br_heat)
+
+        # tag loss
+        pull_loss = 0
+        push_loss = 0
+        tl_tags   = [_tranpose_and_gather_feat(tl_tag, gt_tl_ind) for tl_tag in tl_tags]
+        br_tags   = [_tranpose_and_gather_feat(br_tag, gt_br_ind) for br_tag in br_tags]
+        for tl_tag, br_tag in zip(tl_tags, br_tags):
+            pull, push = self.ae_loss(tl_tag, br_tag, gt_mask)
+            pull_loss += pull
+            push_loss += push
+        pull_loss = self.pull_weight * pull_loss
+        push_loss = self.push_weight * push_loss
+
+        off_loss = 0
+        tl_offs  = [_tranpose_and_gather_feat(tl_off, gt_tl_ind) for tl_off in tl_offs]
+        br_offs  = [_tranpose_and_gather_feat(br_off, gt_br_ind) for br_off in br_offs]
+        for tl_off, br_off in zip(tl_offs, br_offs):
+            off_loss += self.off_loss(tl_off, gt_tl_off, gt_mask)
+            off_loss += self.off_loss(br_off, gt_br_off, gt_mask)
         off_loss = self.off_weight * off_loss
 
         loss = (focal_loss + pull_loss + push_loss + off_loss) / max(len(tl_heats), 1)
