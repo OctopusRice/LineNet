@@ -40,7 +40,7 @@ def decode(nnet, images, K, ae_threshold=0.5, kernel=3, num_dets=1000):
     detections = nnet.test([images], ae_threshold=ae_threshold, test=True, K=K, kernel=kernel, num_dets=num_dets)[0]
     return detections.data.cpu().numpy()
 
-def cornernet_ifp_squeeze(db, nnet, result_dir, debug=False, decode_func=decode):
+def cornernet_ifp_squeeze2(db, nnet, result_dir, debug=False, decode_func=decode):
     debug_dir = os.path.join(result_dir, "debug")
     if not os.path.exists(debug_dir):
         os.makedirs(debug_dir)
