@@ -141,15 +141,22 @@ class NetworkFactory(object):
 
 
     def load_params(self, iteration):
-        cache_file = self.system_config.snapshot_file.format(iteration)
+        cache_file = self.system_configs.snapshot_file.format(iteration)
         print("loading model from {}".format(cache_file))
         with open(cache_file, "rb") as f:
-            params = torch.load(f)
-            self.model.load_state_dict(params)
+            checkpoint = torch.load(f)
+            self.model.load_state_dict(checkpoint['model_state_dict'])
+            self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+
 
     def save_params(self, iteration):
-        cache_file = self.system_config.snapshot_file.format(iteration)
+        cache_file = self.system_configs.snapshot_file.format(iteration)
         print("saving model to {}".format(cache_file))
         with open(cache_file, "wb") as f:
             params = self.model.state_dict()
-            torch.save(params, f)
+            opt = self.optimizer.state_dict()
+
+            torch.save({
+                'model_state_dict': params,
+                'optimizer_state_dict': opt,
+            }, f)
