@@ -41,7 +41,9 @@ class NetworkFactory(object):
         self.model   = DummyModule(model)
         self.loss    = model.loss
         self.network = Network(self.model, self.loss)
-
+        
+        self.model.cuda()
+        
         if distributed:
             from apex.parallel import DistributedDataParallel, convert_syncbn_model
             torch.cuda.set_device(gpu)
