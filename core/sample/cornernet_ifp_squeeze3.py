@@ -6,6 +6,7 @@ import config_debug
 
 from .utils import random_crop, draw_gaussian, draw_gaussian_line, gaussian_radius, normalize_, color_jittering_, lighting_
 
+
 def _resize_image(image, detections, size):
     detections    = detections.copy()
     height, width = image.shape[0:2]
@@ -19,6 +20,7 @@ def _resize_image(image, detections, size):
     detections[:, 1:4:2] *= height_ratio
     return image, detections
 
+
 def _clip_detections(image, detections):
     detections    = detections.copy()
     height, width = image.shape[0:2]
@@ -30,7 +32,8 @@ def _clip_detections(image, detections):
     detections = detections[keep_inds]
     return detections
 
-def cornernet_ifp_squeeze(system_configs, db, k_ind, data_aug, debug):
+
+def cornernet_ifp_squeeze3(system_configs, db, k_ind, data_aug, debug):
     data_rng   = system_configs.data_rng
     batch_size = system_configs.batch_size
 
@@ -47,26 +50,22 @@ def cornernet_ifp_squeeze(system_configs, db, k_ind, data_aug, debug):
     gaussian_iou  = db.configs["gaussian_iou"]
     gaussian_rad  = db.configs["gaussian_radius"]
 
-    max_tag_len = 256
+    max_tag_len = 128
 
     # allocating memory
-    images      = np.zeros((batch_size, 3, input_size[0], input_size[1]), dtype=np.float32)
+    images = np.zeros((batch_size, 3, input_size[0], input_size[1]), dtype=np.float32)
     tl_heatmaps = np.zeros((batch_size, categories, output_size[0], output_size[1]), dtype=np.float32)
     br_heatmaps = np.zeros((batch_size, categories, output_size[0], output_size[1]), dtype=np.float32)
-    tl_regrs    = np.zeros((batch_size, max_tag_len, 2), dtype=np.float32)
-    br_regrs    = np.zeros((batch_size, max_tag_len, 2), dtype=np.float32)
-    tl_tags     = np.zeros((batch_size, max_tag_len), dtype=np.int64)
-    br_tags     = np.zeros((batch_size, max_tag_len), dtype=np.int64)
-    tl_off_tags = np.zeros((batch_size, max_tag_len), dtype=np.int64)
-    br_off_tags = np.zeros((batch_size, max_tag_len), dtype=np.int64)
+    tl_regrs = np.zeros((batch_size, max_tag_len, 2), dtype=np.float32)
+    br_regrs = np.zeros((batch_size, max_tag_len, 2), dtype=np.float32)
+    tl_tags = np.zeros((batch_size, max_tag_len), dtype=np.int64)
+    br_tags = np.zeros((batch_size, max_tag_len), dtype=np.int64)
+    tag_masks = np.zeros((batch_size, max_tag_len), dtype=np.uint8)
+    tag_lens = np.zeros((batch_size,), dtype=np.int32)
 
-    tag_masks   = np.zeros((batch_size, max_tag_len), dtype=np.uint8)
-    tl_off_masks= np.zeros((batch_size, max_tag_len), dtype=np.uint8)
-    br_off_masks= np.zeros((batch_size, max_tag_len), dtype=np.uint8)
-
-    tag_lens    = np.zeros((batch_size, ), dtype=np.int32)
-    tl_off_lens = np.zeros((batch_size,), dtype=np.int32)
-    br_off_lens = np.zeros((batch_size,), dtype=np.int32)
+    if config_debug.visualize_sampleFile:
+        tl_ifp_heatmaps = np.zeros((batch_size, categories, output_size[0], output_size[1]), dtype=np.float32)
+    ifp_Penalty = 0.1
 
     db_size = db.db_inds.size
     for b_ind in range(batch_size):
@@ -84,6 +83,10 @@ def cornernet_ifp_squeeze(system_configs, db, k_ind, data_aug, debug):
         detections = db.detections(db_ind)
 
         if config_debug.visualize_sampleFile:
+            image = cv2.imread('/home/octo/Desktop/LineNet/demo.jpg')
+            detections = np.array([[190, 230, 292, 446, 1], [276, 222, 345, 300, 1], [348, 125, 442, 252, 1],
+                          [459, 198, 639, 476, 1]], dtype=np.float32)
+
             image2 = image.copy()
             cv2.imwrite(
                 './sampleFile/oriImage' + str(b_ind) + image_path.rpartition('/')[-1], image2)
@@ -275,91 +278,61 @@ def cornernet_ifp_squeeze(system_configs, db, k_ind, data_aug, debug):
 
                 if ind >= len(detections) - len(ifpGT):
                     if category >= 0:
-                        draw_gaussian(tl_heatmaps[b_ind, category], [xtl, ytl], radius)
+                        draw_gaussian(tl_heatmaps[b_ind, category], [xtl, ytl], radius, ifp_Penalty)
+                        if config_debug.visualize_sampleFile:
+                            draw_gaussian(tl_ifp_heatmaps[b_ind, category], [xtl, ytl], radius, ifp_Penalty)
                     else:
                         mcategory = -(category + 1) - 1
-                        draw_gaussian(br_heatmaps[b_ind, mcategory], [xbr, ybr], radius)
+                        draw_gaussian(br_heatmaps[b_ind, mcategory], [xbr, ybr], radius, ifp_Penalty)
                 else:
-                    # if config_debug.is_lineGT:
-                    #     draw_gaussian_line(tl_heatmaps[b_ind, category], [xtl, ytl], radius, True, output_size)
-                    #     draw_gaussian_line(br_heatmaps[b_ind, category], [xbr, ybr], radius, False, output_size)
-                    # else:
                     draw_gaussian(tl_heatmaps[b_ind, category], [xtl, ytl], radius)
                     draw_gaussian(br_heatmaps[b_ind, category], [xbr, ybr], radius)
             else:
                 if ind >= len(detections) - len(ifpGT):
                     if category >= 0:
-                        tl_heatmaps[b_ind, category, ytl, xtl] = 1
+                        tl_heatmaps[b_ind, category, ytl, xtl] = ifp_Penalty
                     else:
                         mcategory = -(category + 1) - 1
-                        br_heatmaps[b_ind, mcategory, ybr, xbr] = 1
+                        br_heatmaps[b_ind, mcategory, ybr, xbr] = ifp_Penalty
                 else:
-                    # if config_debug.is_lineGT:
-                    #     for c in range(0, xtl + 1):
-                    #         tl_heatmaps[b_ind, category, ytl, c] = 1
-                    #     for c in range(xbr, output_size[0]):
-                    #         br_heatmaps[b_ind, category, ybr, c] = 1
-                    #     for r in range(0, ytl + 1):
-                    #         tl_heatmaps[b_ind, category, r, xtl] = 1
-                    #     for r in range(ytl, output_size[1]):
-                    #         br_heatmaps[b_ind, category, r, xbr] = 1
-                    # else:
                     tl_heatmaps[b_ind, category, ytl, xtl] = 1
                     br_heatmaps[b_ind, category, ybr, xbr] = 1
 
             if ind < len(detections) - len(ifpGT):
                 tag_ind = tag_lens[b_ind]
+                tl_regrs[b_ind, tag_ind, :] = [fxtl - xtl, fytl - ytl]
+                br_regrs[b_ind, tag_ind, :] = [fxbr - xbr, fybr - ybr]
                 tl_tags[b_ind, tag_ind] = ytl * output_size[1] + xtl
                 br_tags[b_ind, tag_ind] = ybr * output_size[1] + xbr
                 tag_lens[b_ind] += 1
 
-            tl_off_ind = tl_off_lens[b_ind]
-            br_off_ind = br_off_lens[b_ind]
-            if tl_off_ind >= max_tag_len or br_off_ind >= max_tag_len:
-                with open("foo.txt", "w") as f:
-                    f.write(str(image_path) + ' ' + str(db_ind))
-                continue
-
-            if ind < len(detections) - len(ifpGT) or category >= 0:
-                tl_regrs[b_ind, tl_off_ind, :] = [fxtl - xtl, fytl - ytl]
-                tl_off_tags[b_ind, tl_off_ind] = ytl * output_size[1] + xtl
-                tl_off_lens[b_ind] += 1
-            if ind < len(detections) - len(ifpGT) or category < 0:
-                br_regrs[b_ind, br_off_ind, :] = [fxbr - xbr, fybr - ybr]
-                br_off_tags[b_ind, br_off_ind] = ybr * output_size[1] + xbr
-                br_off_lens[b_ind] += 1
-
         if config_debug.visualize_sampleFile:
             t = np.zeros((output_size[0], output_size[1]), dtype=np.float32)
+            t2= np.zeros((output_size[0], output_size[1]), dtype=np.float32)
             for category in range(0, categories):
                 t += tl_heatmaps[b_ind, category]
-            cv2.imwrite('sampleFile/ifp_lines_Added_gt' + str(b_ind) + image_path.rpartition('/')[-1], t * 256)
+            for category in range(0, categories):
+                t2 += tl_ifp_heatmaps[b_ind, category]
+            cv2.imwrite('sampleFile/ifp_Added_gt' + str(b_ind) + image_path.rpartition('/')[-1], t * 256)
+            cv2.imwrite('sampleFile/ifp_only_gt' + str(b_ind) + image_path.rpartition('/')[-1], t2 * 256)
 
     if config_debug.visualize_sampleFile:
         exit()
 
     for b_ind in range(batch_size):
         tag_len = tag_lens[b_ind]
-        off_tl_len = tl_off_lens[b_ind]
-        off_br_len = br_off_lens[b_ind]
         tag_masks[b_ind, :tag_len] = 1
-        tl_off_masks[b_ind, :off_tl_len] = 1
-        br_off_masks[b_ind, :off_br_len] = 1
 
-    images      = torch.from_numpy(images)
+    images = torch.from_numpy(images)
     tl_heatmaps = torch.from_numpy(tl_heatmaps)
     br_heatmaps = torch.from_numpy(br_heatmaps)
-    tl_regrs    = torch.from_numpy(tl_regrs)
-    br_regrs    = torch.from_numpy(br_regrs)
-    tl_tags     = torch.from_numpy(tl_tags)
-    br_tags     = torch.from_numpy(br_tags)
-    tl_off_tags = torch.from_numpy(tl_off_tags)
-    br_off_tags = torch.from_numpy(br_off_tags)
-    tag_masks   = torch.from_numpy(tag_masks)
-    tl_off_masks= torch.from_numpy(tl_off_masks)
-    br_off_masks= torch.from_numpy(br_off_masks)
+    tl_regrs = torch.from_numpy(tl_regrs)
+    br_regrs = torch.from_numpy(br_regrs)
+    tl_tags = torch.from_numpy(tl_tags)
+    br_tags = torch.from_numpy(br_tags)
+    tag_masks = torch.from_numpy(tag_masks)
 
     return {
-        "xs": [images],
-        "ys": [tl_heatmaps, br_heatmaps, tag_masks, tl_off_masks, br_off_masks, tl_regrs, br_regrs, tl_tags, br_tags, tl_off_tags, br_off_tags]
-    }, k_ind
+               "xs": [images],
+               "ys": [tl_heatmaps, br_heatmaps, tag_masks, tl_regrs, br_regrs, tl_tags, br_tags]
+           }, k_ind

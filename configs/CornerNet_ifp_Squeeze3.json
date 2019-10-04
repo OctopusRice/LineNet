@@ -2,7 +2,7 @@
     "system": {
         "dataset": "COCO",
         "batch_size": 13,
-        "sampling_function": "cornernet_ifp_squeeze",
+        "sampling_function": "cornernet_ifp_squeeze2",
 
         "train_split": "trainval",
         "val_split": "minival",
@@ -15,7 +15,7 @@
         "opt_algo": "adam",
         "prefetch_size": 5,
 
-        "max_iter": 500000,
+        "max_iter": 1000000,
         "stepsize": 450000,
         "snapshot": 5000,
 

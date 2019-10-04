@@ -7,7 +7,7 @@ from .py_utils.utils import convolution, corner_pool, residual
 from .py_utils.losses import CornerNet_ifp_Loss
 from .py_utils.modules import hg_module, hg, hg_net
 
-class fire_module(nn.Module):
+class fire_module(nn.Module):  # Done
     def __init__(self, inp_dim, out_dim, sr=2, stride=1):
         super(fire_module, self).__init__()
         self.conv1    = nn.Conv2d(inp_dim, out_dim // sr, kernel_size=1, stride=1, bias=False)
@@ -32,20 +32,20 @@ class fire_module(nn.Module):
 def make_pool_layer(dim):
     return nn.Sequential()
 
-def make_unpool_layer(dim):
+def make_unpool_layer(dim):  # Done
     return nn.ConvTranspose2d(dim, dim, kernel_size=4, stride=2, padding=1)
 
-def make_layer(inp_dim, out_dim, modules):
+def make_layer(inp_dim, out_dim, modules):  # Done
     layers  = [fire_module(inp_dim, out_dim)]
     layers += [fire_module(out_dim, out_dim) for _ in range(1, modules)]
     return nn.Sequential(*layers)
 
-def make_layer_revr(inp_dim, out_dim, modules):
+def make_layer_revr(inp_dim, out_dim, modules):  # Done
     layers  = [fire_module(inp_dim, inp_dim) for _ in range(modules - 1)]
     layers += [fire_module(inp_dim, out_dim)]
     return nn.Sequential(*layers)
 
-def make_hg_layer(inp_dim, out_dim, modules):
+def make_hg_layer(inp_dim, out_dim, modules):  # Done
     layers  = [fire_module(inp_dim, out_dim, stride=2)]
     layers += [fire_module(out_dim, out_dim) for _ in range(1, modules)]
     return nn.Sequential(*layers)
@@ -53,7 +53,7 @@ def make_hg_layer(inp_dim, out_dim, modules):
 class model(hg_net):
     def _pred_mod(self, dim):
         return nn.Sequential(
-            convolution(1, 256, 256, with_bn=False),
+            convolution(1, 256, 256, with_bn=False),  # Done
             nn.Conv2d(256, dim, (1, 1))
         )
 
@@ -68,16 +68,16 @@ class model(hg_net):
         pre     = nn.Sequential(
             convolution(7, 3, 128, stride=2),
             residual(128, 256, stride=2),
-            residual(256, 256, stride=2)
+            residual(256, 256, stride=2)  # Done
         )
         hg_mods = nn.ModuleList([
             hg_module(
-                4, [256, 256, 384, 384, 512], [2, 2, 2, 2, 4],
+                4, [256, 256, 384, 384, 512], [2, 2, 2, 2, 4],  # Done
                 make_pool_layer=make_pool_layer,
-                make_unpool_layer=make_unpool_layer,
-                make_up_layer=make_layer,
-                make_low_layer=make_layer,
-                make_hg_layer_revr=make_layer_revr,
+                make_unpool_layer=make_unpool_layer,  # Done
+                make_up_layer=make_layer,  # Done
+                make_low_layer=make_layer,  # Done
+                make_hg_layer_revr=make_layer_revr,  # Done
                 make_hg_layer=make_hg_layer
             ) for _ in range(stacks)
         ])

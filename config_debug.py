@@ -1,13 +1,19 @@
 visualize_jh = False
-visualize_sampleFile = True
-validation = True
+visualize_sampleFile = False
+validation = False
 
-is_ifpGT = True
+is_ifpGT = False
 is_lineGT = False
 
+# cfg_file = "CornerNet"
 # cfg_file = "CornerNet_Saccade"
-cfg_file = "CornerNet_ifp_Saccade"
+# cfg_file = "CornerNet_ifp_Saccade"
 # cfg_file = "LineNet"
+# cfg_file = "CornerNet_ifp_Squeeze"
+
+# cfg_file = "CornerNet_Squeeze"
+# cfg_file = "CornerNet_ifp_Squeeze2"
+cfg_file = "CornerNet_ifp_Squeeze3"
 
 # cfg_file = "LineNet_tlbr"
 
